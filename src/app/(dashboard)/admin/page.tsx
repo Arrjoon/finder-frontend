@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import StatCard from "@/components/dashboard/StatCard";
@@ -90,9 +91,15 @@ export default function AdminDashboardPage() {
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <CardTitle>Recent Business Registrations</CardTitle>
-                    <Button variant="outline" size="sm" className="text-blue-600 border-blue-600 hover:bg-blue-50">
-                      View all
-                    </Button>
+                    <Link href="/dashboard/admin/businesses">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="text-blue-600 border-blue-600 hover:bg-blue-50"
+                      >
+                        View all
+                      </Button>
+                    </Link>
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -163,10 +170,12 @@ export default function AdminDashboardPage() {
                   <CardTitle>Quick Actions</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                  <Button className="w-full justify-start bg-blue-600 hover:bg-blue-700">
-                    <Building2 className="h-4 w-4 mr-2" />
-                    Add New Business
-                  </Button>
+                  <Link href="/dashboard/admin/businesses" className="w-full">
+                    <Button className="w-full justify-start bg-blue-600 hover:bg-blue-700">
+                      <Building2 className="h-4 w-4 mr-2" />
+                      Manage Businesses
+                    </Button>
+                  </Link>
                   <Button variant="outline" className="w-full justify-start">
                     <Users className="h-4 w-4 mr-2" />
                     Manage Users
