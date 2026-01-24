@@ -275,7 +275,7 @@ const RecentActivity = () => {
                           <Hand className="h-4 w-4 mr-1.5" />
                           <span className="text-xs">Funny</span>
                         </Button>
-                        <Button variant="ghost" size="sm" className="h-9 flex-1 hover:bg-red-50 hover:text-red-700">
+                        <Button variant="ghost" size="sm" className="h-9 flex-1 hover:bg-green-50 hover:text-green-700">
                           <Heart className="h-4 w-4 mr-1.5" />
                           <span className="text-xs">Love</span>
                         </Button>

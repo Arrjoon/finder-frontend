@@ -2,8 +2,8 @@
 
 import React, { useState } from "react";
 import { useSearchParams } from "next/navigation";
-import Header from "@/components/layout/header";
 import Footer from "@/components/layout/Footer";
+import SearchPageSearchBar from "@/components/search/SearchPageSearchBar";
 import FilterSidebar from "@/components/search/FilterSidebar";
 import BusinessListingCard from "@/components/search/BusinessListingCard";
 import MapSidebar from "@/components/search/MapSidebar";
@@ -101,10 +101,13 @@ export default function SearchResultsPage() {
 
   return (
     <>
-      <Header />
+      <SearchPageSearchBar 
+        initialQuery={query}
+        initialLocation={location}
+      />
       <div className="min-h-screen bg-gray-50">
-        {/* Header Section */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-40">
+        {/* Results Header Section */}
+      <div className="bg-white border-b border-gray-200">
         <div className="mx-auto max-w-[1920px] px-4 py-4">
           <div className="flex items-center justify-between mb-4">
             <div>

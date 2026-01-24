@@ -87,10 +87,10 @@ const MapSidebar = ({ locations = [] }: MapSidebarProps) => {
               }}
             >
               <div className="relative">
-                <div className="w-8 h-8 bg-red-600 rounded-full border-2 border-white shadow-lg flex items-center justify-center text-white font-bold text-xs">
+                <div className="w-8 h-8 bg-green-600 rounded-full border-2 border-white shadow-lg flex items-center justify-center text-white font-bold text-xs">
                   {idx + 1}
                 </div>
-                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-red-600"></div>
+                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-green-600"></div>
               </div>
             </div>
           ))}

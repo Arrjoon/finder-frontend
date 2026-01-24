@@ -106,7 +106,7 @@ const StickySearchBar = () => {
               </div>
               <Button
                 size="lg"
-                className="bg-red-600 hover:bg-red-700 text-white px-6 sm:px-8 py-6 h-auto text-base font-semibold shadow-md shrink-0 rounded-lg"
+                className="bg-green-600 hover:bg-green-700 text-white px-6 sm:px-8 py-6 h-auto text-base font-semibold shadow-md shrink-0 rounded-lg"
               >
                 <Search className="h-5 w-5 mr-2" />
                 Search
@@ -203,7 +203,7 @@ const StickySearchBar = () => {
             </div>
             <Button
               size="lg"
-              className="bg-red-600 hover:bg-red-700 text-white px-6 sm:px-8 py-6 sm:py-7 h-auto text-base sm:text-lg font-semibold shadow-md shrink-0 rounded-lg"
+              className="bg-green-600 hover:bg-green-700 text-white px-6 sm:px-8 py-6 sm:py-7 h-auto text-base sm:text-lg font-semibold shadow-md shrink-0 rounded-lg"
             >
               <Search className="h-5 w-5 mr-2" />
               Search

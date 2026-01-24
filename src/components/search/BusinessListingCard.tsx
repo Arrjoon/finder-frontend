@@ -152,7 +152,7 @@ const BusinessListingCard = ({
           {actionButton && (
             <Button
               variant={actionButton.variant || "default"}
-              className="bg-red-600 hover:bg-red-700 text-white"
+              className="bg-green-600 hover:bg-green-700 text-white"
             >
               {actionButton.label}
             </Button>
