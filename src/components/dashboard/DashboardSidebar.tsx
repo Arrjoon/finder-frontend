@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   Building2,
   Users,
+  User,
   MessageSquare,
   BarChart3,
   Settings,
@@ -56,6 +57,7 @@ const DashboardSidebar = ({ role }: DashboardSidebarProps) => {
 
   const userNavItems: NavItem[] = [
     { title: "Dashboard", href: "/dashboard/user", icon: <LayoutDashboard className="h-5 w-5" /> },
+    { title: "My Profile", href: "/dashboard/user/profile", icon: <User className="h-5 w-5" /> },
     { title: "My Reviews", href: "/dashboard/user/reviews", icon: <Star className="h-5 w-5" /> },
     { title: "Saved Places", href: "/dashboard/user/saved", icon: <Bookmark className="h-5 w-5" /> },
     { title: "Activity", href: "/dashboard/user/activity", icon: <FileText className="h-5 w-5" /> },

@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import StatCard from "@/components/dashboard/StatCard";
@@ -15,6 +16,7 @@ import {
   Bookmark,
   TrendingUp,
   Calendar,
+  User,
 } from "lucide-react";
 
 export default function UserDashboardPage() {
@@ -210,7 +212,13 @@ export default function UserDashboardPage() {
                   <CardTitle>Quick Actions</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                  <Button className="w-full justify-start bg-blue-600 hover:bg-blue-700">
+                  <Link href="/dashboard/user/profile" className="w-full">
+                    <Button className="w-full justify-start bg-blue-600 hover:bg-blue-700">
+                      <User className="h-4 w-4 mr-2" />
+                      Edit Profile
+                    </Button>
+                  </Link>
+                  <Button className="w-full justify-start bg-green-600 hover:bg-green-700">
                     <MessageSquare className="h-4 w-4 mr-2" />
                     Write a Review
                   </Button>
