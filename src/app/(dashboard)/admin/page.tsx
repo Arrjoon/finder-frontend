@@ -176,10 +176,12 @@ export default function AdminDashboardPage() {
                       Manage Businesses
                     </Button>
                   </Link>
-                  <Button variant="outline" className="w-full justify-start">
-                    <Users className="h-4 w-4 mr-2" />
-                    Manage Users
-                  </Button>
+                  <Link href="/dashboard/admin/users" className="w-full">
+                    <Button variant="outline" className="w-full justify-start">
+                      <Users className="h-4 w-4 mr-2" />
+                      Manage Users
+                    </Button>
+                  </Link>
                   <Button variant="outline" className="w-full justify-start">
                     <MessageSquare className="h-4 w-4 mr-2" />
                     Review Moderation
