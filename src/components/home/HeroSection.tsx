@@ -142,7 +142,7 @@ const HeroSection = ({ children }: HeroSectionProps) => {
       </div>
 
       {/* Center Content */}
-      <div className="relative z-10 h-full flex flex-col items-center justify-center px-4">
+      <div className="relative z-30 h-full flex flex-col items-center justify-center px-4">
         <div className="w-full max-w-5xl mx-auto">
           {/* Title - Above Search */}
           <div className="text-center mb-6 sm:mb-8">
@@ -155,7 +155,7 @@ const HeroSection = ({ children }: HeroSectionProps) => {
           </div>
           
           {/* Search Bar Component - Centered */}
-          <div className="w-full">
+          <div className="w-full relative z-50">
             {children}
           </div>
         </div>
