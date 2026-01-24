@@ -1,4 +1,7 @@
+"use client";
+
 import React from "react";
+import Link from "next/link";
 import { Star, MapPin, Clock, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -46,26 +49,31 @@ const BusinessListingCard = ({
     return count.toString();
   };
 
+  // Generate slug from name
+  const slug = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+
   return (
     <div className="bg-white border-b border-gray-200 p-6 hover:bg-gray-50 transition-colors">
       <div className="flex gap-4">
         {/* Image */}
-        <div className="relative w-32 h-32 sm:w-40 sm:h-40 rounded-lg overflow-hidden shrink-0">
+        <Link href={`/listings/${slug}`} className="relative w-32 h-32 sm:w-40 sm:h-40 rounded-lg overflow-hidden shrink-0">
           <img
             src={image}
             alt={name}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover hover:scale-105 transition-transform"
           />
-        </div>
+        </Link>
 
         {/* Content */}
         <div className="flex-1 min-w-0">
           {/* Header */}
           <div className="flex items-start justify-between gap-4 mb-2">
             <div className="flex-1 min-w-0">
-              <h3 className="text-xl font-semibold text-gray-900 mb-1 hover:text-blue-600 cursor-pointer">
-                {name}
-              </h3>
+              <Link href={`/listings/${slug}`}>
+                <h3 className="text-xl font-semibold text-gray-900 mb-1 hover:text-blue-600 cursor-pointer">
+                  {name}
+                </h3>
+              </Link>
               <div className="flex items-center gap-2 flex-wrap">
                 {/* Rating */}
                 <div className="flex items-center gap-1">
