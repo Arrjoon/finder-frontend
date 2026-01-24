@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 
 const Header = () => {
   return (
-    <header className="w-full border-b bg-white/95 backdrop-blur-sm sticky top-0 z-50 shadow-sm">
+    <header className="w-full border-b bg-white/95 backdrop-blur-sm z-50 shadow-sm">
       <div className="mx-auto max-w-7xl px-4 py-4">
         <div className="flex items-center justify-between gap-4">
           {/* Logo */}
