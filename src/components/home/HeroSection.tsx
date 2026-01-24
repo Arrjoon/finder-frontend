@@ -145,11 +145,11 @@ const HeroSection = ({ children }: HeroSectionProps) => {
       <div className="relative z-30 h-full flex flex-col items-center justify-center px-4">
         <div className="w-full max-w-5xl mx-auto">
           {/* Title - Above Search */}
-          <div className="text-center mb-6 sm:mb-8">
-            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-3 sm:mb-4 drop-shadow-2xl">
+          <div className="text-center mb-8 sm:mb-10">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-4 sm:mb-5 drop-shadow-2xl leading-tight">
               {slides[currentSlide].title}
             </h1>
-            <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-white/90 drop-shadow-lg">
+            <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-white/95 drop-shadow-lg font-light">
               {slides[currentSlide].subtitle}
             </p>
           </div>

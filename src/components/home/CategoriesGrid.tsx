@@ -71,11 +71,16 @@ const categories: Category[] = [
 
 const CategoriesGrid = () => {
   return (
-    <section className="w-full bg-white py-12">
+    <section className="w-full bg-gradient-to-b from-gray-50 to-white py-16">
       <div className="mx-auto max-w-7xl px-4">
-        <h2 className="text-4xl font-bold text-gray-900 text-center mb-10">
-          Categories
-        </h2>
+        <div className="mb-10">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
+            Explore Categories
+          </h2>
+          <p className="text-gray-600 text-lg">
+            Find exactly what you're looking for
+          </p>
+        </div>
         
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
           {categories.map((category) => (

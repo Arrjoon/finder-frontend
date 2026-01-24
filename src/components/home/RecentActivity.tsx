@@ -145,13 +145,13 @@ const StarRating = ({ rating }: { rating: number }) => {
 
 const RecentActivity = () => {
   return (
-    <section className="w-full bg-gradient-to-b from-white via-gray-50 to-white py-16">
+    <section className="w-full bg-white py-16">
       <div className="mx-auto max-w-7xl px-4">
-        <div className="text-center mb-12">
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-3">
+        <div className="mb-10">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
             Recent Activity
           </h2>
-          <p className="text-lg text-gray-600">
+          <p className="text-gray-600 text-lg">
             See what's happening in your community
           </p>
         </div>

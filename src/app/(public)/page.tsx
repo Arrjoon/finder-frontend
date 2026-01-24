@@ -4,6 +4,7 @@ import HeroSection from "@/components/home/HeroSection";
 import StickySearchBar from "@/components/home/StickySearchBar";
 import RecentActivity from "@/components/home/RecentActivity";
 import CategoriesGrid from "@/components/home/CategoriesGrid";
+import FeaturedSection from "@/components/home/FeaturedSection";
 
 export default function HomePage() {
   return (
@@ -16,6 +17,8 @@ export default function HomePage() {
             <StickySearchBar />
           </HeroSection>
         </div>
+        
+        <FeaturedSection />
         <RecentActivity />
         <CategoriesGrid />
       </main>
