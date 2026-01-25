@@ -265,7 +265,7 @@ export default function UsersPage() {
 
           {/* Filters */}
           <Card>
-            <CardContent className="pt-6">
+            <CardContent className="pt-2">
               <div className="flex flex-col sm:flex-row gap-4">
                 {/* Search */}
                 <div className="flex-1 relative">

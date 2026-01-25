@@ -156,6 +156,7 @@ const HeroSection = ({ children }: HeroSectionProps) => {
           
           {/* Search Bar Component - Centered */}
           <div className="w-full relative z-50">
+            <h1>Search bar index here</h1>
             {children}
           </div>
         </div>

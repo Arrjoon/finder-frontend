@@ -30,7 +30,7 @@ interface NavItem {
 }
 
 interface DashboardSidebarProps {
-  role: "admin" | "business" | "user";
+  w: "admin" | "business" | "user";
 }
 
 const DashboardSidebar = ({ role }: DashboardSidebarProps) => {
