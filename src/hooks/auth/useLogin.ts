@@ -4,12 +4,12 @@ import { LOGIN } from "@/lib/end-points";
 import { apiClient } from "@/api/api-client";
 
 export type LoginPayload = {
-  email: string;
+  username: string;
   password: string;
 };
 
 export const useLogin = () =>
   useMutation({
-    mutationFn: ({ email, password }: LoginPayload) =>
-      apiClient.post(LOGIN, { username: email, password }),
+    mutationFn: ({ username, password }: LoginPayload) =>
+      apiClient.post(LOGIN, { username, password }),
   });

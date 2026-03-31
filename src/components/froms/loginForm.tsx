@@ -27,7 +27,7 @@ import { Alert, AlertTitle } from "@/components/ui/alert";
 import { RECAPTCHA_SITE_KEY } from "@/lib/constants";
 
 const formSchema = z.object({
-  email: z.email("Invalid email address"),
+  username: z.string().min(1, "Username is required"),
   password: z.string().min(1, "Password is required"),
 });
 
@@ -54,7 +54,7 @@ export default function LoginForm() {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      email: "",
+      username: "",
       password: "",
     },
   });
@@ -68,7 +68,7 @@ export default function LoginForm() {
       return;
     }
 
-    login(data, {
+    login({ username: data.username, password: data.password }, {
       onSuccess: () => {
         router.push("/");
       },
@@ -83,15 +83,15 @@ export default function LoginForm() {
         <div className="grid gap-3">
           <FormField
             control={form.control}
-            name="email"
+            name="username"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-[#2A3574]">Email</FormLabel>
+                <FormLabel className="text-[#2A3574]">Username</FormLabel>
                 <FormControl>
                   <Input
-                    type="email"
-                    placeholder="you@example.com"
-                    autoComplete="email"
+                    type="text"
+                    placeholder="Enter your username"
+                    autoComplete="off"
                     {...field}
                   />
                 </FormControl>
