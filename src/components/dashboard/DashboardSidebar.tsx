@@ -30,7 +30,7 @@ interface NavItem {
 }
 
 interface DashboardSidebarProps {
-  w: "admin" | "business" | "user";
+  role: "admin" | "business" | "user";
 }
 
 const DashboardSidebar = ({ role }: DashboardSidebarProps) => {
@@ -40,6 +40,7 @@ const DashboardSidebar = ({ role }: DashboardSidebarProps) => {
     { title: "Dashboard", href: "/dashboard/admin", icon: <LayoutDashboard className="h-5 w-5" /> },
     { title: "Businesses", href: "/dashboard/admin/businesses", icon: <Building2 className="h-5 w-5" />, badge: 12 },
     { title: "Users", href: "/dashboard/admin/users", icon: <Users className="h-5 w-5" />, badge: 5 },
+    { title: "categories", href: "/dashboard/admin/categories", icon: <HelpCircle className="h-5 w-5" />, badge: 5 },
     { title: "Reviews", href: "/dashboard/admin/reviews", icon: <MessageSquare className="h-5 w-5" /> },
     { title: "Analytics", href: "/dashboard/admin/analytics", icon: <BarChart3 className="h-5 w-5" /> },
     { title: "Reports", href: "/dashboard/admin/reports", icon: <FileText className="h-5 w-5" /> },
