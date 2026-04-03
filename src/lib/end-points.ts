@@ -21,11 +21,11 @@ export const USER_PROFILE = "/accounts/me";
 export const USER_PROFILE_UPDATE = "/accounts/me/";
 
 // COMPANY
-export const FETCH_COMPANY_LIST = "tenants/";
-export const FETCH_COMPANY_DETAILS = (id: number) => `tenants/${id}`;
-export const CREATE_COMPANY = "tenants/";
-export const UPDATE_COMPANY = (id: number | string) => `tenants/${id}/`;
-export const DELETE_COMPANY = (id: number | string) => `tenants/${id}/`;
+export const FETCH_CATEGORIES_LIST = "categories/";
+export const FETCH_CATEGORY_DETAILS = (id: number) => `categories/${id}`;
+export const CREATE_CATEGORY = "categories/";
+export const UPDATE_CATEGORY = (id: number | string) => `categories/${id}/`;
+export const DELETE_CATEGORY = (id: number | string) => `categories/${id}/`;
 
 // COMPANY MEMBERS
 export const FETCH_COMPANY_MEMBERS_LIST = (id: number | string) =>
