@@ -11,15 +11,23 @@ export type TCategoryRes = {
     slug: string;
     icon: string;
     description: string;
+    /** Resolved URL safe for <img src> (may be empty). */
     image: string;
+    createdAt?: string;
+    updatedAt?: string;
+    displayOrder?: number;
+    isActive?: boolean;
+    subcategoriesCount?: number;
 }
 
 export type TCreateCategoryReq = {
     name: string;
-    slug: string;
+    /** Sent for typing convenience; Django may ignore (slug is auto from name). */
+    slug?: string;
     icon: string;
     description: string;
-    image: string;
+    /** Omit when empty; backend uses ImageField (file upload), not remote URLs. */
+    image?: string;
 }
 
 export type TUpdateCategoryReq = TCreateCategoryReq;

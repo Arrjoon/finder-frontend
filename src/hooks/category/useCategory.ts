@@ -6,7 +6,9 @@ import {
   TCategoryRes,
 } from "@/api-services/category/category-definations";
 
-
+/** List cache: fewer refetches → lower server load; data still refreshes after mutations. */
+const CATEGORIES_STALE_MS = 5 * 60 * 1000;
+const CATEGORIES_GC_MS = 30 * 60 * 1000;
 
 /**
  *  Query Keys (important for caching)
@@ -19,16 +21,17 @@ export const CATEGORY_QUERY_KEYS = {
 /**
  *  Fetch Categories
  */
-
-
 export const useCategories = () => {
   return useQuery<TCategoryRes[]>({
     queryKey: CATEGORY_QUERY_KEYS.all,
     queryFn: categoryServices.fetchCategories,
+    staleTime: CATEGORIES_STALE_MS,
+    gcTime: CATEGORIES_GC_MS,
+    refetchOnWindowFocus: false,
   });
 };
 
-/**invalidateQuercategoriesies
+/**
  *  Create Category
  */
 export const useCreateCategory = () => {
@@ -39,7 +42,6 @@ export const useCreateCategory = () => {
       categoryServices.createCategory(data),
 
     onSuccess: () => {
-      // Refetch category list
       queryClient.invalidateQueries({
         queryKey: CATEGORY_QUERY_KEYS.all,
       });
@@ -63,13 +65,11 @@ export const useUpdateCategory = () => {
     }) => categoryServices.updateCategory(data, id),
 
     onSuccess: (_, variables) => {
-      // Refetch list
       queryClient.invalidateQueries({
         queryKey: CATEGORY_QUERY_KEYS.all,
       });
 
-      // Refetch single category if needed
-      queryClient.invalidateQuercategoriesies({
+      queryClient.invalidateQueries({
         queryKey: CATEGORY_QUERY_KEYS.detail(variables.id),
       });
     },

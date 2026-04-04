@@ -19,7 +19,7 @@ interface CategoryFormSidebarProps {
   isOpen: boolean;
   onClose: () => void;
   category?: CategoryData | null;
-  onSave: (category: Omit<CategoryData, "id">) => void;
+  onSave: (category: Omit<CategoryData, "id">) => void | Promise<void>;
 }
 
 const CategoryFormSidebar = ({
@@ -71,19 +71,25 @@ const CategoryFormSidebar = ({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
 
     const today = new Date().toISOString().split("T")[0];
-    onSave({
-      name: formData.name.trim(),
-      description: formData.description.trim(),
-      image: formData.image.trim(),
-      createdAt: category?.createdAt ?? today,
-      updatedAt: today,
-    });
-    onClose();
+    try {
+      await Promise.resolve(
+        onSave({
+          name: formData.name.trim(),
+          description: formData.description.trim(),
+          image: formData.image.trim(),
+          createdAt: category?.createdAt ?? today,
+          updatedAt: today,
+        })
+      );
+      onClose();
+    } catch {
+      // Parent handles errors (e.g. toast); keep form open for retry.
+    }
   };
 
   return (
