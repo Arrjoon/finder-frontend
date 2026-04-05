@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import BusinessFormSidebar from "@/components/business/BusinessFormSidebar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,12 +14,10 @@ import {
   Search,
   Edit,
   Trash2,
-  Eye,
   CheckCircle2,
   Clock,
   XCircle,
   Filter,
-  MoreVertical,
 } from "lucide-react";
 import {
   Select,
@@ -28,100 +26,33 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-interface Business {
-  id: number;
-  name: string;
-  category: string;
-  address: string;
-  city: string;
-  phone: string;
-  email: string;
-  status: "active" | "pending" | "inactive";
-  rating?: number;
-  reviewCount?: number;
-  createdAt: string;
-  imageUrl?: string;
-}
-
-// Mock data
-const mockBusinesses: Business[] = [
-  {
-    id: 1,
-    name: "Himalayan Restaurant",
-    category: "Restaurant",
-    address: "Thamel, Kathmandu",
-    city: "Kathmandu",
-    phone: "+977 1-4412345",
-    email: "info@himalayan.com",
-    status: "active",
-    rating: 4.5,
-    reviewCount: 128,
-    createdAt: "2024-01-15",
-    imageUrl: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400",
-  },
-  {
-    id: 2,
-    name: "Thamel Coffee House",
-    category: "Cafe",
-    address: "Thamel, Kathmandu",
-    city: "Kathmandu",
-    phone: "+977 1-4423456",
-    email: "contact@thamelcoffee.com",
-    status: "pending",
-    rating: 4.8,
-    reviewCount: 89,
-    createdAt: "2024-01-20",
-    imageUrl: "https://images.unsplash.com/photo-1501339847302-ac426a4c7c8e?w=400",
-  },
-  {
-    id: 3,
-    name: "Kathmandu Spa",
-    category: "Spa",
-    address: "Durbar Marg, Kathmandu",
-    city: "Kathmandu",
-    phone: "+977 1-4434567",
-    email: "info@kathmanduspa.com",
-    status: "active",
-    rating: 4.2,
-    reviewCount: 67,
-    createdAt: "2024-01-10",
-    imageUrl: "https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=400",
-  },
-  {
-    id: 4,
-    name: "Nepal Adventure Tours",
-    category: "Tourism",
-    address: "Lazimpat, Kathmandu",
-    city: "Kathmandu",
-    phone: "+977 1-4445678",
-    email: "info@nepaltours.com",
-    status: "inactive",
-    rating: 4.7,
-    reviewCount: 145,
-    createdAt: "2024-01-05",
-    imageUrl: "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=400",
-  },
-  {
-    id: 5,
-    name: "Everest Bakery",
-    category: "Restaurant",
-    address: "Boudha, Kathmandu",
-    city: "Kathmandu",
-    phone: "+977 1-4456789",
-    email: "info@everestbakery.com",
-    status: "pending",
-    rating: 4.3,
-    reviewCount: 52,
-    createdAt: "2024-01-25",
-    imageUrl: "https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=400",
-  },
-];
+import {
+  useBusiness,
+  useCreateBusiness,
+  useUpdateBusiness,
+  useDeleteBusiness,
+} from "@/hooks/business/useBusiness";
+import {
+  TBusinessReq,
+  TBusinessResponse,
+  mapBusinessReqToWritePayload,
+} from "@/api-services/business/business-definations";
+import { useCategories } from "@/hooks/category/useCategory";
 
 export default function BusinessesPage() {
-  const [businesses, setBusinesses] = useState<Business[]>(mockBusinesses);
+  const { data: businesses = [], isLoading, isError, error, refetch } = useBusiness();
+  const { data: categoryList = [] } = useCategories();
+  const createBusiness = useCreateBusiness();
+  const updateBusiness = useUpdateBusiness();
+  const deleteBusiness = useDeleteBusiness();
+
+  const mutating =
+    createBusiness.isPending ||
+    updateBusiness.isPending ||
+    deleteBusiness.isPending;
+
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingBusiness, setEditingBusiness] = useState<Business | null>(null);
+  const [editingBusiness, setEditingBusiness] = useState<TBusinessResponse | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -131,40 +62,27 @@ export default function BusinessesPage() {
     setIsFormOpen(true);
   };
 
-  const handleEdit = (business: Business) => {
+  const handleEdit = (business: TBusinessResponse) => {
     setEditingBusiness(business);
     setIsFormOpen(true);
   };
 
-  const handleDelete = (id: number) => {
-    if (confirm("Are you sure you want to delete this business?")) {
-      setBusinesses(businesses.filter((b) => b.id !== id));
+  const handleDelete = async (slug: string) => {
+    if (!confirm("Are you sure you want to delete this business?")) return;
+    try {
+      await deleteBusiness.mutateAsync(slug);
+    } catch {
+      /* Error surfaced via mutation state if needed */
     }
   };
 
-  const handleSave = (businessData: any) => {
+  const handleSave = async (req: TBusinessReq) => {
+    const payload = mapBusinessReqToWritePayload(req, categoryList);
     if (editingBusiness) {
-      // Update existing business
-      setBusinesses(
-        businesses.map((b) =>
-          b.id === editingBusiness.id
-            ? { ...b, ...businessData, id: editingBusiness.id }
-            : b
-        )
-      );
+      await updateBusiness.mutateAsync({ data: payload, slug: editingBusiness.slug });
     } else {
-      // Create new business
-      const newBusiness: Business = {
-        ...businessData,
-        id: businesses.length + 1,
-        createdAt: new Date().toISOString().split("T")[0],
-        rating: 0,
-        reviewCount: 0,
-      };
-      setBusinesses([...businesses, newBusiness]);
+      await createBusiness.mutateAsync(payload);
     }
-    setIsFormOpen(false);
-    setEditingBusiness(null);
   };
 
   const getStatusBadge = (status: string) => {
@@ -198,14 +116,57 @@ export default function BusinessesPage() {
   const filteredBusinesses = businesses.filter((business) => {
     const matchesSearch =
       business.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      business.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      business.address.toLowerCase().includes(searchQuery.toLowerCase());
+      business.primary_category_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      business.city?.toLowerCase().includes(searchQuery.toLowerCase());
+
     const matchesStatus = statusFilter === "all" || business.status === statusFilter;
-    const matchesCategory = categoryFilter === "all" || business.category === categoryFilter;
+
+    const matchesCategory =
+      categoryFilter === "all" || business.primary_category_name === categoryFilter;
+
     return matchesSearch && matchesStatus && matchesCategory;
   });
 
-  const categories = Array.from(new Set(businesses.map((b) => b.category)));
+  const categoryFilterOptions = useMemo(() => {
+    const names = businesses
+      .map((b) => b.primary_category_name)
+      .filter((n): n is string => Boolean(n));
+    return Array.from(new Set(names)).sort((a, b) => a.localeCompare(b));
+  }, [businesses]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex">
+        <DashboardSidebar role="admin" />
+        <main className="flex-1 overflow-x-hidden flex items-center justify-center p-8">
+          <div className="text-center space-y-3">
+            <div className="inline-block h-10 w-10 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+            <p className="text-gray-600">Loading businesses…</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex">
+        <DashboardSidebar role="admin" />
+        <main className="flex-1 overflow-x-hidden flex items-center justify-center p-8">
+          <Card className="max-w-md w-full">
+            <CardContent className="pt-6 text-center space-y-4">
+              <p className="text-red-600">
+                {error instanceof Error ? error.message : "Failed to load businesses."}
+              </p>
+              <Button type="button" onClick={() => refetch()}>
+                Try again
+              </Button>
+            </CardContent>
+          </Card>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -217,16 +178,17 @@ export default function BusinessesPage() {
         />
 
         <div className="p-6 space-y-6">
-          {/* Header Actions */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
               <h2 className="text-2xl font-bold text-gray-900">All Businesses</h2>
               <p className="text-sm text-gray-600 mt-1">
-                {filteredBusinesses.length} business{filteredBusinesses.length !== 1 ? "es" : ""} found
+                {filteredBusinesses.length} business{filteredBusinesses.length !== 1 ? "es" : ""}{" "}
+                found
               </p>
             </div>
             <Button
               onClick={handleCreate}
+              disabled={mutating}
               className="bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white"
             >
               <Plus className="h-4 w-4 mr-2" />
@@ -234,11 +196,9 @@ export default function BusinessesPage() {
             </Button>
           </div>
 
-          {/* Filters */}
           <Card>
             <CardContent className="pt-6">
               <div className="flex flex-col sm:flex-row gap-4">
-                {/* Search */}
                 <div className="flex-1 relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <Input
@@ -247,11 +207,11 @@ export default function BusinessesPage() {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-10"
+                    disabled={mutating}
                   />
                 </div>
 
-                {/* Status Filter */}
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <Select value={statusFilter} onValueChange={setStatusFilter} disabled={mutating}>
                   <SelectTrigger className="w-full sm:w-[180px]">
                     <Filter className="h-4 w-4 mr-2" />
                     <SelectValue placeholder="All Status" />
@@ -264,16 +224,15 @@ export default function BusinessesPage() {
                   </SelectContent>
                 </Select>
 
-                {/* Category Filter */}
-                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <Select value={categoryFilter} onValueChange={setCategoryFilter} disabled={mutating}>
                   <SelectTrigger className="w-full sm:w-[180px]">
                     <SelectValue placeholder="All Categories" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Categories</SelectItem>
-                    {categories.map((cat) => (
-                      <SelectItem key={cat} value={cat}>
-                        {cat}
+                    {categoryFilterOptions.map((name) => (
+                      <SelectItem key={name} value={name}>
+                        {name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -282,16 +241,14 @@ export default function BusinessesPage() {
             </CardContent>
           </Card>
 
-          {/* Businesses Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredBusinesses.map((business) => (
               <Card key={business.id} className="hover:shadow-lg transition-shadow">
                 <CardContent className="p-0">
-                  {/* Image */}
                   <div className="relative h-48 bg-gradient-to-br from-blue-400 to-green-400 overflow-hidden">
-                    {business.imageUrl ? (
+                    {business.cover_image ? (
                       <img
-                        src={business.imageUrl}
+                        src={business.cover_image}
                         alt={business.name}
                         className="w-full h-full object-cover"
                       />
@@ -301,19 +258,18 @@ export default function BusinessesPage() {
                       </div>
                     )}
                     <div className="absolute top-3 right-3">
-                      {getStatusBadge(business.status)}
+                      {getStatusBadge(business?.status || "pending")}
                     </div>
                   </div>
 
-                  {/* Content */}
                   <div className="p-5 space-y-3">
                     <div>
-                      <h3 className="text-lg font-bold text-gray-900 mb-1">
-                        {business.name}
-                      </h3>
-                      <Badge variant="outline" className="text-xs">
-                        {business.category}
-                      </Badge>
+                      <h3 className="text-lg font-bold text-gray-900 mb-1">{business.name}</h3>
+                      {business.primary_category_name ? (
+                        <Badge variant="outline" className="text-xs">
+                          {business.primary_category_name}
+                        </Badge>
+                      ) : null}
                     </div>
 
                     <div className="space-y-2 text-sm text-gray-600">
@@ -325,23 +281,28 @@ export default function BusinessesPage() {
                         <span className="text-gray-400">📞</span>
                         <span>{business.phone}</span>
                       </div>
-                      {business.rating && (
+                      {business.rating ? (
                         <div className="flex items-center gap-2">
                           <span className="text-yellow-500">⭐</span>
                           <span>
-                            {business.rating} ({business.reviewCount} reviews)
+                            {business.rating} (
+                            {business.review_count ? business.review_count : 0} reviews)
                           </span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <span className="text-gray-400">No rating</span>
                         </div>
                       )}
                     </div>
 
-                    {/* Actions */}
                     <div className="flex items-center gap-2 pt-3 border-t border-gray-200">
                       <Button
                         variant="outline"
                         size="sm"
                         className="flex-1"
                         onClick={() => handleEdit(business)}
+                        disabled={mutating}
                       >
                         <Edit className="h-4 w-4 mr-1" />
                         Edit
@@ -350,7 +311,8 @@ export default function BusinessesPage() {
                         variant="outline"
                         size="sm"
                         className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        onClick={() => handleDelete(business.id)}
+                        onClick={() => handleDelete(business.slug)}
+                        disabled={mutating}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -361,22 +323,20 @@ export default function BusinessesPage() {
             ))}
           </div>
 
-          {/* Empty State */}
           {filteredBusinesses.length === 0 && (
             <Card>
               <CardContent className="py-12 text-center">
                 <Building2 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  No businesses found
-                </h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">No businesses found</h3>
                 <p className="text-gray-600 mb-4">
                   {searchQuery || statusFilter !== "all" || categoryFilter !== "all"
                     ? "Try adjusting your filters"
                     : "Get started by creating your first business"}
                 </p>
-                {(!searchQuery && statusFilter === "all" && categoryFilter === "all") && (
+                {!searchQuery && statusFilter === "all" && categoryFilter === "all" && (
                   <Button
                     onClick={handleCreate}
+                    disabled={mutating}
                     className="bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white"
                   >
                     <Plus className="h-4 w-4 mr-2" />
@@ -389,7 +349,6 @@ export default function BusinessesPage() {
         </div>
       </main>
 
-      {/* Business Form Sidebar */}
       <BusinessFormSidebar
         isOpen={isFormOpen}
         onClose={() => {
@@ -398,8 +357,8 @@ export default function BusinessesPage() {
         }}
         business={editingBusiness}
         onSave={handleSave}
+        isSaving={mutating}
       />
     </div>
   );
 }
-

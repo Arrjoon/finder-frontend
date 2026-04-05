@@ -1,6 +1,6 @@
 import {
     TBusinessResponse,
-    TBusinessUpdateReq,
+    TBusinessWritePayload,
 } from "@/api-services/business/business-definations"
 import { businessServices } from "@/api-services/business/business-services"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
@@ -32,11 +32,13 @@ export const useCreateBusiness = () =>{
 export const useUpdateBusiness = () =>{
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: ({data,slug}:{data:TBusinessUpdateReq,slug:string}) => businessServices.updateBusiness(data,slug),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['businesses'] })
-        }
-    })
+        mutationFn: ({ data, slug }: { data: TBusinessWritePayload; slug: string }) =>
+            businessServices.updateBusiness(data, slug),
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({ queryKey: ["businesses"] });
+            queryClient.invalidateQueries({ queryKey: ["businesses", "detail", variables.slug] });
+        },
+    });
 }
 
 export const useDeleteBusiness = () =>{
