@@ -22,7 +22,13 @@ export const useBusiness = () =>{
 export const useCreateBusiness = () =>{
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: businessServices.createBusiness,
+        mutationFn: ({
+            data,
+            coverFile,
+        }: {
+            data: TBusinessWritePayload;
+            coverFile?: File | null;
+        }) => businessServices.createBusiness(data, coverFile),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['businesses'] })
         }
@@ -32,8 +38,15 @@ export const useCreateBusiness = () =>{
 export const useUpdateBusiness = () =>{
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: ({ data, slug }: { data: TBusinessWritePayload; slug: string }) =>
-            businessServices.updateBusiness(data, slug),
+        mutationFn: ({
+            data,
+            slug,
+            coverFile,
+        }: {
+            data: TBusinessWritePayload;
+            slug: string;
+            coverFile?: File | null;
+        }) => businessServices.updateBusiness(data, slug, coverFile),
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries({ queryKey: ["businesses"] });
             queryClient.invalidateQueries({ queryKey: ["businesses", "detail", variables.slug] });

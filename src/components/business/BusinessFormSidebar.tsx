@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useEffect, useMemo } from "react";
 import { X, Building2, MapPin, Phone, Globe, DollarSign, Image as ImageIcon, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
+import { useForm, Controller } from "react-hook-form";
 import {
   Select,
   SelectContent,
@@ -14,23 +15,27 @@ import {
 } from "@/components/ui/select";
 import { TBusinessReq, TBusinessResponse } from "@/api-services/business/business-definations";
 import { useCategories } from "@/hooks/category/useCategory";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 
-type FormState = {
-  name: string;
-  slug: string;
-  description: string;
-  phone: string;
-  email: string;
-  website: string;
-  address: string;
-  city: string;
-  country: string;
-  price_range: string;
-  cover_image: string;
-  primary_category_slug: string;
-};
+const businessSchema = z.object({
+  name: z.string().min(1, "Business name is required"),
+  slug: z.string().optional(),
+  description: z.string().optional(),
+  phone: z.string().min(1, "Phone is required"),
+  email: z.string().email("Invalid email format").optional().or(z.literal("")),
+  website: z.string().url("Invalid URL").optional().or(z.literal("")),
+  address: z.string().min(1, "Address is required"),
+  city: z.string().optional(),
+  country: z.string().optional(),
+  price_range: z.string().optional(),
+  cover_image: z.custom<File | undefined>().optional(),
+  primary_category: z.number().int().positive({ message: "Category is required" }),
+});
 
-const emptyForm = (): FormState => ({
+type BusinessFormState = z.infer<typeof businessSchema>;
+
+const defaultValues = (): BusinessFormState => ({
   name: "",
   slug: "",
   description: "",
@@ -41,43 +46,23 @@ const emptyForm = (): FormState => ({
   city: "Kathmandu",
   country: "Nepal",
   price_range: "Rs. 500-1000",
-  cover_image: "",
-  primary_category_slug: "",
+  cover_image: undefined,
+  primary_category: 1,
 });
 
-function resolvePrimaryCategorySlug(
-  business: TBusinessResponse,
-  categoryList: { id: number; slug: string; name: string }[],
-): string {
-  if (business.primary_category != null) {
-    const byId = categoryList.find((c) => c.id === business.primary_category);
-    if (byId) return byId.slug;
-  }
-  const raw = business.categories ?? [];
-  for (const item of raw) {
-    if (typeof item === "number") {
-      const byId = categoryList.find((c) => c.id === item);
-      if (byId) return byId.slug;
-    } else if (typeof item === "string") {
-      if (categoryList.some((c) => c.slug === item)) return item;
-      if (/^\d+$/.test(item)) {
-        const byId = categoryList.find((c) => c.id === Number(item));
-        if (byId) return byId.slug;
-      }
-    }
-  }
-  if (business.primary_category_name) {
-    const byName = categoryList.find((c) => c.name === business.primary_category_name);
-    if (byName) return byName.slug;
-  }
-  return "";
-}
+const priceRanges = [
+  "Rs. 200-500",
+  "Rs. 500-1000",
+  "Rs. 1000-2000",
+  "Rs. 2000-5000",
+  "Rs. 5000+",
+];
 
 interface BusinessFormSidebarProps {
   isOpen: boolean;
   onClose: () => void;
   business?: TBusinessResponse | null;
-  onSave: (business: TBusinessReq) => void | Promise<void>;
+  onSave: (business: TBusinessReq, coverFile?: File | null) => void | Promise<void>;
   isSaving?: boolean;
 }
 
@@ -90,8 +75,15 @@ const BusinessFormSidebar = ({
 }: BusinessFormSidebarProps) => {
   const { data: categoryList = [], isLoading: categoriesLoading } = useCategories();
 
-  const [formData, setFormData] = useState<FormState>(emptyForm);
-  const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const {
+    control,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<BusinessFormState>({
+    resolver: zodResolver(businessSchema),
+    defaultValues: defaultValues(),
+  });
 
   const sortedCategories = useMemo(
     () => [...categoryList].sort((a, b) => a.name.localeCompare(b.name)),
@@ -99,83 +91,50 @@ const BusinessFormSidebar = ({
   );
 
   useEffect(() => {
+    if (!isOpen) return;
     if (business) {
-      setFormData({
-        name: business.name || "",
-        slug: business.slug || "",
-        description: business.description || "",
-        phone: business.phone || "",
-        email: business.email || "",
-        website: business.website || "",
-        address: business.address || "",
-        city: business.city || "Kathmandu",
-        country: business.country || "Nepal",
-        price_range: business.price_range || "Rs. 500-1000",
-        cover_image: business.cover_image || "",
-        primary_category_slug: resolvePrimaryCategorySlug(business, categoryList),
+      reset({
+        name: business.name,
+        slug: business.slug,
+        description: business.description ?? "",
+        phone: business.phone,
+        email: business.email ?? "",
+        website: business.website ?? "",
+        address: business.address,
+        city: business.city ?? "Kathmandu",
+        country: business.country ?? "Nepal",
+        price_range: business.price_range ?? "Rs. 500-1000",
+        cover_image: undefined,
+        primary_category: business.primary_category ?? 1,
       });
     } else {
-      setFormData(emptyForm());
+      reset(defaultValues());
     }
-    setErrors({});
-  }, [business, isOpen, categoryList]);
+  }, [isOpen, business, reset]);
 
-  const handleChange = (field: keyof FormState, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: "" }));
-    }
-  };
+  const onSubmit = async (data: BusinessFormState) => {
+    const cat = categoryList.find((c) => c.id === data.primary_category);
+    if (!cat) return;
 
-  const validate = (): boolean => {
-    const newErrors: { [key: string]: string } = {};
-
-    if (!formData.name.trim()) newErrors.name = "Business name is required";
-    if (!formData.primary_category_slug) {
-      newErrors.primary_category_slug = "Category is required";
-    }
-    if (!formData.address.trim()) newErrors.address = "Address is required";
-    if (!formData.phone.trim()) newErrors.phone = "Phone is required";
-    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = "Invalid email format";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validate() || isSaving) return;
-
-    const slug = formData.slug.trim();
     const req: TBusinessReq = {
-      name: formData.name.trim(),
-      ...(slug ? { slug } : {}),
-      description: formData.description.trim() || undefined,
-      phone: formData.phone.trim(),
-      email: formData.email.trim() || undefined,
-      website: formData.website.trim() || undefined,
-      address: formData.address.trim(),
-      city: formData.city.trim() || undefined,
-      country: formData.country.trim() || undefined,
-      price_range: formData.price_range || undefined,
-      cover_image: formData.cover_image.trim() || undefined,
-      categories: [formData.primary_category_slug],
-      primary_category: formData.primary_category_slug,
+      name: data.name,
+      slug: data.slug?.trim() ? data.slug : undefined,
+      description: data.description?.trim() ? data.description : undefined,
+      categories: [cat.slug],
+      primary_category: cat.slug,
+      phone: data.phone,
+      email: data.email?.trim() ? data.email : undefined,
+      website: data.website?.trim() ? data.website : undefined,
+      address: data.address,
+      city: data.city?.trim() ? data.city : undefined,
+      country: data.country?.trim() ? data.country : undefined,
+      price_range: data.price_range?.trim() ? data.price_range : undefined,
     };
 
-    await onSave(req);
+    const coverFile = data.cover_image instanceof File ? data.cover_image : undefined;
+    await onSave(req, coverFile);
     onClose();
   };
-
-  const priceRanges = [
-    "Rs. 200-500",
-    "Rs. 500-1000",
-    "Rs. 1000-2000",
-    "Rs. 2000-5000",
-    "Rs. 5000+",
-  ];
 
   return (
     <>
@@ -217,28 +176,31 @@ const BusinessFormSidebar = ({
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-6">
           <Card>
             <CardContent className="pt-6 space-y-4">
               <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                 <Building2 className="h-5 w-5 text-blue-600" />
                 Basic Information
               </h3>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Business Name <span className="text-red-500">*</span>
                 </label>
-                <Input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => handleChange("name", e.target.value)}
-                  placeholder="Enter business name"
-                  className={errors.name ? "border-red-500" : ""}
-                  disabled={isSaving}
+                <Controller
+                  name="name"
+                  control={control}
+                  render={({ field }) => (
+                    <Input
+                      {...field}
+                      placeholder="Enter the business name"
+                      className={errors.name ? "border-red-500" : ""}
+                      disabled={isSaving}
+                    />
+                  )}
                 />
                 {errors.name && (
-                  <p className="text-sm text-red-500 mt-1">{errors.name}</p>
+                  <p className="text-sm text-red-500 mt-1">{errors.name.message}</p>
                 )}
               </div>
 
@@ -247,13 +209,21 @@ const BusinessFormSidebar = ({
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Slug (optional)
                   </label>
-                  <Input
-                    type="text"
-                    value={formData.slug}
-                    onChange={(e) => handleChange("slug", e.target.value)}
-                    placeholder="auto-generated if empty"
-                    disabled={isSaving}
+                  <Controller
+                    name="slug"
+                    control={control}
+                    render={({ field }) => (
+                      <Input
+                        {...field}
+                        placeholder="auto-generated if empty"
+                        className={errors.slug ? "border-red-500" : ""}
+                        disabled={isSaving}
+                      />
+                    )}
                   />
+                  {errors.slug && (
+                    <p className="text-sm text-red-500 mt-1">{errors.slug.message}</p>
+                  )}
                 </div>
               )}
 
@@ -261,28 +231,38 @@ const BusinessFormSidebar = ({
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Category <span className="text-red-500">*</span>
                 </label>
-                <Select
-                  value={formData.primary_category_slug}
-                  onValueChange={(value) => handleChange("primary_category_slug", value)}
-                  disabled={isSaving || categoriesLoading}
-                >
-                  <SelectTrigger
-                    className={errors.primary_category_slug ? "border-red-500" : ""}
-                  >
-                    <SelectValue
-                      placeholder={categoriesLoading ? "Loading categories…" : "Select category"}
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {sortedCategories.map((cat) => (
-                      <SelectItem key={cat.slug} value={cat.slug}>
-                        {cat.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.primary_category_slug && (
-                  <p className="text-sm text-red-500 mt-1">{errors.primary_category_slug}</p>
+
+                <Controller
+                  name="primary_category"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      value={field.value != null ? String(field.value) : ""}
+                      onValueChange={(v) => field.onChange(Number(v))}
+                      disabled={isSaving || categoriesLoading}
+                    >
+                      <SelectTrigger
+                        className={errors.primary_category ? "border-red-500" : ""}
+                      >
+                        <SelectValue
+                          placeholder={
+                            categoriesLoading ? "Loading categories…" : "Select category"
+                          }
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {sortedCategories.map((cat) => (
+                          <SelectItem key={cat.id} value={String(cat.id)}>
+                            {cat.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+
+                {errors.primary_category && (
+                  <p className="text-sm text-red-500 mt-1">{errors.primary_category.message}</p>
                 )}
               </div>
 
@@ -290,28 +270,48 @@ const BusinessFormSidebar = ({
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Description
                 </label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => handleChange("description", e.target.value)}
-                  placeholder="Describe your business..."
-                  rows={4}
-                  disabled={isSaving}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                <Controller
+                  name="description"
+                  control={control}
+                  render={({ field }) => (
+                    <textarea
+                      {...field}
+                      placeholder="Describe your business..."
+                      rows={4}
+                      disabled={isSaving}
+                      className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  )}
                 />
+                {errors.description && (
+                  <p className="text-sm text-red-500 mt-1">{errors.description.message}</p>
+                )}
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   <ImageIcon className="h-4 w-4" />
-                  Cover image URL
+                  Cover image
                 </label>
-                <Input
-                  type="url"
-                  value={formData.cover_image}
-                  onChange={(e) => handleChange("cover_image", e.target.value)}
-                  placeholder="https://example.com/image.jpg"
-                  disabled={isSaving}
+                <Controller
+                  name="cover_image"
+                  control={control}
+                  render={({ field: { onChange, onBlur, name, ref } }) => (
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      name={name}
+                      ref={ref}
+                      onBlur={onBlur}
+                      onChange={(e) => onChange(e.target.files?.[0])}
+                      disabled={isSaving}
+                      className={errors.cover_image ? "border-red-500" : ""}
+                    />
+                  )}
                 />
+                {errors.cover_image && (
+                  <p className="text-sm text-red-500 mt-1">{errors.cover_image.message}</p>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -328,16 +328,20 @@ const BusinessFormSidebar = ({
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Phone <span className="text-red-500">*</span>
                   </label>
-                  <Input
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) => handleChange("phone", e.target.value)}
-                    placeholder="+977 1-4412345"
-                    className={errors.phone ? "border-red-500" : ""}
-                    disabled={isSaving}
+                  <Controller
+                    name="phone"
+                    control={control}
+                    render={({ field }) => (
+                      <Input
+                        type="tel"
+                        {...field}
+                        disabled={isSaving}
+                        className={errors.phone ? "border-red-500" : ""}
+                      />
+                    )}
                   />
                   {errors.phone && (
-                    <p className="text-sm text-red-500 mt-1">{errors.phone}</p>
+                    <p className="text-sm text-red-500 mt-1">{errors.phone.message}</p>
                   )}
                 </div>
 
@@ -345,16 +349,20 @@ const BusinessFormSidebar = ({
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Email
                   </label>
-                  <Input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => handleChange("email", e.target.value)}
-                    placeholder="business@example.com"
-                    className={errors.email ? "border-red-500" : ""}
-                    disabled={isSaving}
+                  <Controller
+                    name="email"
+                    control={control}
+                    render={({ field }) => (
+                      <Input
+                        type="email"
+                        {...field}
+                        disabled={isSaving}
+                        className={errors.email ? "border-red-500" : ""}
+                      />
+                    )}
                   />
                   {errors.email && (
-                    <p className="text-sm text-red-500 mt-1">{errors.email}</p>
+                    <p className="text-sm text-red-500 mt-1">{errors.email.message}</p>
                   )}
                 </div>
               </div>
@@ -364,16 +372,20 @@ const BusinessFormSidebar = ({
                   <MapPin className="h-4 w-4" />
                   Address <span className="text-red-500">*</span>
                 </label>
-                <Input
-                  type="text"
-                  value={formData.address}
-                  onChange={(e) => handleChange("address", e.target.value)}
-                  placeholder="Street address"
-                  className={errors.address ? "border-red-500" : ""}
-                  disabled={isSaving}
+                <Controller
+                  name="address"
+                  control={control}
+                  render={({ field }) => (
+                    <Input
+                      type="text"
+                      {...field}
+                      disabled={isSaving}
+                      className={errors.address ? "border-red-500" : ""}
+                    />
+                  )}
                 />
                 {errors.address && (
-                  <p className="text-sm text-red-500 mt-1">{errors.address}</p>
+                  <p className="text-sm text-red-500 mt-1">{errors.address.message}</p>
                 )}
               </div>
 
@@ -382,12 +394,12 @@ const BusinessFormSidebar = ({
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     City
                   </label>
-                  <Input
-                    type="text"
-                    value={formData.city}
-                    onChange={(e) => handleChange("city", e.target.value)}
-                    placeholder="Kathmandu"
-                    disabled={isSaving}
+                  <Controller
+                    name="city"
+                    control={control}
+                    render={({ field }) => (
+                      <Input type="text" {...field} disabled={isSaving} />
+                    )}
                   />
                 </div>
 
@@ -395,12 +407,12 @@ const BusinessFormSidebar = ({
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Country
                   </label>
-                  <Input
-                    type="text"
-                    value={formData.country}
-                    onChange={(e) => handleChange("country", e.target.value)}
-                    placeholder="Nepal"
-                    disabled={isSaving}
+                  <Controller
+                    name="country"
+                    control={control}
+                    render={({ field }) => (
+                      <Input type="text" {...field} disabled={isSaving} />
+                    )}
                   />
                 </div>
               </div>
@@ -410,13 +422,21 @@ const BusinessFormSidebar = ({
                   <Globe className="h-4 w-4" />
                   Website
                 </label>
-                <Input
-                  type="url"
-                  value={formData.website}
-                  onChange={(e) => handleChange("website", e.target.value)}
-                  placeholder="https://example.com"
-                  disabled={isSaving}
+                <Controller
+                  name="website"
+                  control={control}
+                  render={({ field }) => (
+                    <Input
+                      type="url"
+                      {...field}
+                      disabled={isSaving}
+                      className={errors.website ? "border-red-500" : ""}
+                    />
+                  )}
                 />
+                {errors.website && (
+                  <p className="text-sm text-red-500 mt-1">{errors.website.message}</p>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -432,22 +452,28 @@ const BusinessFormSidebar = ({
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Price Range
                 </label>
-                <Select
-                  value={formData.price_range}
-                  onValueChange={(value) => handleChange("price_range", value)}
-                  disabled={isSaving}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {priceRanges.map((range) => (
-                      <SelectItem key={range} value={range}>
-                        {range}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Controller
+                  name="price_range"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      disabled={isSaving}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {priceRanges.map((range) => (
+                          <SelectItem key={range} value={range}>
+                            {range}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
               </div>
             </CardContent>
           </Card>

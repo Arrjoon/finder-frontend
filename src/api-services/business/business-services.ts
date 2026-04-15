@@ -1,7 +1,29 @@
+import type { InternalAxiosRequestConfig } from "axios";
 import { apiClient } from "@/api/api-client";
-import { BusinessApiDefinitions, TBusinessResponse, TBusinessWritePayload, TBusinessListResponse } from "./business-definations";
+import {
+    BusinessApiDefinitions,
+    TBusinessResponse,
+    TBusinessWritePayload,
+    TBusinessListResponse,
+    businessWritePayloadToFormData,
+} from "./business-definations";
 import { CREATE_BUSINESS, FETCH_BUSINESS_LIST, UPDATE_BUSINESS,DELETE_BUSINESS,FETCH_BUSINESS_DETAILS } from "@/lib/end-points";
 
+/** Instance defaults to JSON; strip Content-Type so the browser sets multipart boundary for FormData. */
+function formDataRequestConfig(body: FormData): Pick<InternalAxiosRequestConfig, "transformRequest"> {
+    return {
+        transformRequest: [
+            (data, headers) => {
+                if (data instanceof FormData) {
+                    if (headers && typeof headers.delete === "function") {
+                        headers.delete("Content-Type");
+                    }
+                }
+                return data;
+            },
+        ],
+    };
+}
 
 class BusinessServices implements BusinessApiDefinitions {
     async fetchBusinessList(): Promise<TBusinessResponse[]>{
@@ -9,12 +31,30 @@ class BusinessServices implements BusinessApiDefinitions {
         return response.data.results;
 
     }
-    async createBusiness(req: TBusinessWritePayload): Promise<TBusinessResponse>{
+    async createBusiness(req: TBusinessWritePayload, coverFile?: File | null): Promise<TBusinessResponse>{
+        if (coverFile) {
+            const body = businessWritePayloadToFormData(req, coverFile);
+            const response = await apiClient.post<TBusinessResponse>(
+                CREATE_BUSINESS,
+                body,
+                formDataRequestConfig(body),
+            );
+            return response.data;
+        }
         const response = await apiClient.post<TBusinessResponse>(CREATE_BUSINESS, req);
         return response.data;
     }
 
-    async updateBusiness(req: TBusinessWritePayload,slug:string): Promise<TBusinessResponse>{
+    async updateBusiness(req: TBusinessWritePayload, slug: string, coverFile?: File | null): Promise<TBusinessResponse>{
+        if (coverFile) {
+            const body = businessWritePayloadToFormData(req, coverFile);
+            const response = await apiClient.put<TBusinessResponse>(
+                UPDATE_BUSINESS(slug),
+                body,
+                formDataRequestConfig(body),
+            );
+            return response.data;
+        }
         const response = await apiClient.put<TBusinessResponse>(UPDATE_BUSINESS(slug), req);
         return response.data;
     }

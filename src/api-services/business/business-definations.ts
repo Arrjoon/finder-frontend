@@ -95,3 +95,57 @@ export function mapBusinessReqToWritePayload(
         primary_category: primary,
     };
 }
+
+/**
+ * Builds multipart/form-data for create/update when uploading `cover_image` as a file.
+ * DRF expects repeated `categories` keys for many-to-many PKs.
+ */
+export function businessWritePayloadToFormData(
+    payload: TBusinessWritePayload,
+    coverFile?: File | null,
+): FormData {
+    const fd = new FormData();
+    fd.append("name", payload.name);
+    if (payload.slug != null && payload.slug !== "") {
+        fd.append("slug", payload.slug);
+    }
+    if (payload.description != null && payload.description !== "") {
+        fd.append("description", payload.description);
+    }
+    for (const id of payload.categories) {
+        fd.append("categories", String(id));
+    }
+    if (payload.primary_category != null) {
+        fd.append("primary_category", String(payload.primary_category));
+    }
+    fd.append("phone", payload.phone);
+    if (payload.email != null && payload.email !== "") {
+        fd.append("email", payload.email);
+    }
+    if (payload.website != null && payload.website !== "") {
+        fd.append("website", payload.website);
+    }
+    fd.append("address", payload.address);
+    if (payload.city != null && payload.city !== "") {
+        fd.append("city", payload.city);
+    }
+    if (payload.country != null && payload.country !== "") {
+        fd.append("country", payload.country);
+    }
+    if (payload.latitude != null) {
+        fd.append("latitude", String(payload.latitude));
+    }
+    if (payload.longitude != null) {
+        fd.append("longitude", String(payload.longitude));
+    }
+    if (payload.price_range != null && payload.price_range !== "") {
+        fd.append("price_range", payload.price_range);
+    }
+    if (payload.rating != null) {
+        fd.append("rating", String(payload.rating));
+    }
+    if (coverFile) {
+        fd.append("cover_image", coverFile);
+    }
+    return fd;
+}

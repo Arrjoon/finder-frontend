@@ -76,12 +76,16 @@ export default function BusinessesPage() {
     }
   };
 
-  const handleSave = async (req: TBusinessReq) => {
+  const handleSave = async (req: TBusinessReq, coverFile?: File | null) => {
     const payload = mapBusinessReqToWritePayload(req, categoryList);
     if (editingBusiness) {
-      await updateBusiness.mutateAsync({ data: payload, slug: editingBusiness.slug });
+      await updateBusiness.mutateAsync({
+        data: payload,
+        slug: editingBusiness.slug,
+        coverFile,
+      });
     } else {
-      await createBusiness.mutateAsync(payload);
+      await createBusiness.mutateAsync({ data: payload, coverFile });
     }
   };
 
