@@ -31,9 +31,9 @@ export const DELETE_CATEGORY = (id: number | string) => `categories/${id}/`;
 
 export const FETCH_BUSINESS_LIST = "businesses/";
 export const FETCH_BUSINESS_DETAILS = (slug: string) => `businesses/${slug}/`;
-export const CREATE_BUSINESS = "businesses/";
-export const UPDATE_BUSINESS = (slug: string) => `businesses/${slug}/`;
-export const DELETE_BUSINESS = (slug: string) => `businesses/${slug}/`;
+export const CREATE_BUSINESS = "businesses/create/";
+export const UPDATE_BUSINESS = (slug: string) => `businesses/${slug}/update/`;
+export const DELETE_BUSINESS = (slug: string) => `businesses/${slug}/delete/`;
 
 
 // // CHANNEL CONFIGURATION

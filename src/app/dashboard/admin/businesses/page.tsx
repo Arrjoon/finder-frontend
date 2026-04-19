@@ -63,6 +63,7 @@ export default function BusinessesPage() {
   };
 
   const handleEdit = (business: TBusinessResponse) => {
+    console.log(business);
     setEditingBusiness(business);
     setIsFormOpen(true);
   };

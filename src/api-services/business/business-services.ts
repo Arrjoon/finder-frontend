@@ -28,7 +28,7 @@ function formDataRequestConfig(body: FormData): Pick<InternalAxiosRequestConfig,
 class BusinessServices implements BusinessApiDefinitions {
     async fetchBusinessList(): Promise<TBusinessResponse[]>{
         const response = await apiClient.get<TBusinessListResponse>(FETCH_BUSINESS_LIST);
-        return response.data.results;
+        return response.data.results
 
     }
     async createBusiness(req: TBusinessWritePayload, coverFile?: File | null): Promise<TBusinessResponse>{
