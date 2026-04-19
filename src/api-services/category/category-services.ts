@@ -2,6 +2,7 @@ import { apiClient } from "@/api/api-client";
 import {
   CategoryApiDefinitions,
   TCategoryRes,
+  TCategoriesPaginatedResponse,
   TUpdateCategoryReq,
   TCreateCategoryReq,
 } from "./category-definations";
@@ -74,10 +75,82 @@ function unwrapListPayload(data: unknown): CategoryApiRow[] {
   return [];
 }
 
+function parsePaginatedPayload(
+  data: unknown
+): Paginated<CategoryApiRow> | null {
+  if (data && typeof data === "object" && "results" in data) {
+    return data as Paginated<CategoryApiRow>;
+  }
+  return null;
+}
+
 class CategoryServices implements CategoryApiDefinitions {
+  /**
+   * Full list (for dropdowns, etc.): follows DRF `next` until all pages are loaded.
+   */
   async fetchCategories(): Promise<TCategoryRes[]> {
-    const response = await apiClient.get<unknown>(FETCH_CATEGORIES_LIST);
-    return unwrapListPayload(response.data).map(normalizeCategory);
+    const accumulated: TCategoryRes[] = [];
+    let url: string | null = FETCH_CATEGORIES_LIST;
+
+    while (url) {
+      const response = await apiClient.get<unknown>(url);
+      const payload = response.data;
+
+      if (Array.isArray(payload)) {
+        accumulated.push(
+          ...(payload as CategoryApiRow[]).map(normalizeCategory)
+        );
+        break;
+      }
+
+      const paginated = parsePaginatedPayload(payload);
+      if (!paginated) break;
+
+      accumulated.push(
+        ...(paginated.results ?? []).map(normalizeCategory)
+      );
+      url = paginated.next ?? null;
+    }
+
+    return accumulated;
+  }
+
+  async fetchCategoriesPaginated(params: {
+    page: number;
+    search?: string;
+  }): Promise<TCategoriesPaginatedResponse> {
+    const sp = new URLSearchParams();
+    sp.set("page", String(Math.max(1, params.page)));
+    const q = params.search?.trim();
+    if (q) sp.set("search", q);
+
+    const qs = sp.toString();
+    const path = qs ? `${FETCH_CATEGORIES_LIST}?${qs}` : FETCH_CATEGORIES_LIST;
+
+    const response = await apiClient.get<unknown>(path);
+    const data = response.data;
+
+    if (Array.isArray(data)) {
+      const results = (data as CategoryApiRow[]).map(normalizeCategory);
+      return {
+        results,
+        count: results.length,
+        next: null,
+        previous: null,
+      };
+    }
+
+    const paginated = parsePaginatedPayload(data);
+    if (!paginated) {
+      return { results: [], count: 0, next: null, previous: null };
+    }
+
+    return {
+      results: (paginated.results ?? []).map(normalizeCategory),
+      count: paginated.count ?? 0,
+      next: paginated.next ?? null,
+      previous: paginated.previous ?? null,
+    };
   }
 
   async createCategory(req: TCreateCategoryReq): Promise<TCategoryRes> {

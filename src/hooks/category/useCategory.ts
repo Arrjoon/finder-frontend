@@ -4,6 +4,7 @@ import {
   TCreateCategoryReq,
   TUpdateCategoryReq,
   TCategoryRes,
+  TCategoriesPaginatedResponse,
 } from "@/api-services/category/category-definations";
 
 /** List cache: fewer refetches → lower server load; data still refreshes after mutations. */
@@ -15,6 +16,8 @@ const CATEGORIES_GC_MS = 30 * 60 * 1000;
  */
 export const CATEGORY_QUERY_KEYS = {
   all: ["categories"] as const,
+  paginated: (page: number, search: string) =>
+    ["categories", "paginated", page, search] as const,
   detail: (id: number) => ["category", id] as const,
 };
 
@@ -28,6 +31,28 @@ export const useCategories = () => {
     staleTime: CATEGORIES_STALE_MS,
     gcTime: CATEGORIES_GC_MS,
     refetchOnWindowFocus: false,
+  });
+};
+
+/**
+ * Admin list: one page per request; matches DRF `?page=` and `?search=`.
+ */
+export const useCategoriesPaginated = (
+  page: number,
+  search?: string
+) => {
+  const searchKey = search?.trim() ?? "";
+  return useQuery<TCategoriesPaginatedResponse>({
+    queryKey: CATEGORY_QUERY_KEYS.paginated(page, searchKey),
+    queryFn: () =>
+      categoryServices.fetchCategoriesPaginated({
+        page,
+        search: searchKey || undefined,
+      }),
+    staleTime: CATEGORIES_STALE_MS,
+    gcTime: CATEGORIES_GC_MS,
+    refetchOnWindowFocus: false,
+    placeholderData: (prev) => prev,
   });
 };
 

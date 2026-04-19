@@ -1,8 +1,19 @@
+export type TCategoriesPaginatedResponse = {
+  results: TCategoryRes[];
+  count: number;
+  next: string | null;
+  previous: string | null;
+};
+
 export interface CategoryApiDefinitions {
-    fetchCategories:() => Promise<TCategoryRes[]>;
-    createCategory: (req: TCreateCategoryReq) => Promise<TCategoryRes>;
-    updateCategory: (req: TUpdateCategoryReq, id: number) => Promise<TCategoryRes>;
-    deleteCategory: (id: number) => Promise<void>;
+  fetchCategories: () => Promise<TCategoryRes[]>;
+  fetchCategoriesPaginated: (params: {
+    page: number;
+    search?: string;
+  }) => Promise<TCategoriesPaginatedResponse>;
+  createCategory: (req: TCreateCategoryReq) => Promise<TCategoryRes>;
+  updateCategory: (req: TUpdateCategoryReq, id: number) => Promise<TCategoryRes>;
+  deleteCategory: (id: number) => Promise<void>;
 }
 
 export type TCategoryRes = {

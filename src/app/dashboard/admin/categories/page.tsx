@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import CategoryFormSidebar, {
@@ -19,9 +19,11 @@ import {
   Calendar,
   Loader2,
   RefreshCw,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import {
-  useCategories,
+  useCategoriesPaginated,
   useCreateCategory,
   useUpdateCategory,
   useDeleteCategory,
@@ -47,8 +49,26 @@ function categoryRowLabel(c: TCategoryRes): string {
 }
 
 export default function CategoriesPage() {
-  const { data: categories = [], isLoading, isError, error, refetch } =
-    useCategories();
+  const [page, setPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(searchQuery.trim()), 350);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch]);
+
+  const { data, isLoading, isError, error, refetch, isFetching } =
+    useCategoriesPaginated(page, debouncedSearch);
+  const categories = data?.results ?? [];
+  const totalCount = data?.count ?? 0;
+  const hasPrev = Boolean(data?.previous);
+  const hasNext = Boolean(data?.next);
+
   const createCategory = useCreateCategory();
   const updateCategory = useUpdateCategory();
   const deleteCategory = useDeleteCategory();
@@ -57,7 +77,6 @@ export default function CategoriesPage() {
   const [editingCategory, setEditingCategory] = useState<TCategoryRes | null>(
     null
   );
-  const [searchQuery, setSearchQuery] = useState("");
 
   const mutating =
     createCategory.isPending ||
@@ -135,16 +154,6 @@ export default function CategoriesPage() {
     }
   };
 
-  const filteredCategories = useMemo(() => {
-    const q = searchQuery.toLowerCase().trim();
-    if (!q) return categories;
-    return categories.filter(
-      (cat) =>
-        cat.name.toLowerCase().includes(q) ||
-        cat.description.toLowerCase().includes(q)
-    );
-  }, [categories, searchQuery]);
-
   return (
     <div className="min-h-screen bg-gray-50 flex">
       <DashboardSidebar role="admin" />
@@ -163,9 +172,9 @@ export default function CategoriesPage() {
               <p className="text-sm text-gray-600 mt-1">
                 {isLoading
                   ? "Loading…"
-                  : `${filteredCategories.length} categor${
-                      filteredCategories.length !== 1 ? "ies" : "y"
-                    } found`}
+                  : `${totalCount} categor${totalCount !== 1 ? "ies" : "y"}${
+                      debouncedSearch ? " matching search" : ""
+                    }`}
               </p>
             </div>
             <Button
@@ -236,7 +245,7 @@ export default function CategoriesPage() {
 
           {!isLoading && !isError && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredCategories.map((category) => (
+              {categories.map((category) => (
                 <Card
                   key={category.id}
                   className="hover:shadow-lg transition-shadow"
@@ -323,7 +332,40 @@ export default function CategoriesPage() {
             </div>
           )}
 
-          {!isLoading && !isError && filteredCategories.length === 0 && (
+          {!isLoading && !isError && categories.length > 0 && (
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-2">
+              <p className="text-sm text-gray-600">
+                Page {page}
+                {isFetching && !isLoading ? (
+                  <Loader2 className="inline h-4 w-4 ml-2 animate-spin text-gray-400" />
+                ) : null}
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={!hasPrev || mutating}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Previous
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={!hasNext || mutating}
+                  onClick={() => setPage((p) => p + 1)}
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {!isLoading && !isError && categories.length === 0 && (
             <Card>
               <CardContent className="py-12 text-center">
                 <Layers className="h-12 w-12 text-gray-400 mx-auto mb-4" />
