@@ -58,7 +58,7 @@ export default function CategoriesPage() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
   useEffect(() => {
-    const t = setTimeout(() => setDebouncedSearch(searchQuery.trim()), 350);
+    const t = setTimeout(() => setDebouncedSearch(searchQuery.trim()), 3500);
     return () => clearTimeout(t);
   }, [searchQuery]);
 

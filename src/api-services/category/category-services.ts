@@ -89,6 +89,7 @@ class CategoryServices implements CategoryApiDefinitions {
    * Full list (for dropdowns, etc.): follows DRF `next` until all pages are loaded.
    */
   async fetchCategories(): Promise<TCategoryRes[]> {
+    
     const accumulated: TCategoryRes[] = [];
     let url: string | null = FETCH_CATEGORIES_LIST;
 

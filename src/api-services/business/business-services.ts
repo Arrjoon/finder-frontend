@@ -5,6 +5,7 @@ import {
     TBusinessResponse,
     TBusinessWritePayload,
     TBusinessListResponse,
+    TBusinessPaginatedResponse,
     businessWritePayloadToFormData,
 } from "./business-definations";
 import { CREATE_BUSINESS, FETCH_BUSINESS_LIST, UPDATE_BUSINESS,DELETE_BUSINESS,FETCH_BUSINESS_DETAILS } from "@/lib/end-points";
@@ -29,8 +30,22 @@ class BusinessServices implements BusinessApiDefinitions {
     async fetchBusinessList(): Promise<TBusinessResponse[]>{
         const response = await apiClient.get<TBusinessListResponse>(FETCH_BUSINESS_LIST);
         return response.data.results
-
     }
+
+    async fetchBusinessListPaginated(params: {
+        page: number;
+        search?: string;
+    }): Promise<TBusinessPaginatedResponse> {
+        const sp = new URLSearchParams();
+        sp.set("page", String(Math.max(1, params.page)));
+        const q = params.search?.trim();
+        if (q) sp.set("search", q);
+        const qs = sp.toString();
+        const path = qs ? `${FETCH_BUSINESS_LIST}?${qs}` : FETCH_BUSINESS_LIST;
+        const response = await apiClient.get<TBusinessListResponse>(path);
+        return response.data;
+    }
+
     async createBusiness(req: TBusinessWritePayload, coverFile?: File | null): Promise<TBusinessResponse>{
         if (coverFile) {
             const body = businessWritePayloadToFormData(req, coverFile);

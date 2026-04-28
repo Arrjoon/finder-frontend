@@ -1,16 +1,27 @@
 import {
     TBusinessResponse,
     TBusinessWritePayload,
+    TBusinessPaginatedResponse,
 } from "@/api-services/business/business-definations"
 import { businessServices } from "@/api-services/business/business-services"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
+const BUS_STALE_MS = 1000 * 60 * 5;
+const BUS_GC_MS = 1000 * 60 * 30;
+
+export const BUSINESS_QUERY_KEYS = {
+    all: ["businesses"] as const,
+    paginated: (page: number, search: string) =>
+        ["businesses", "paginated", page, search] as const,
+    detail: (slug: string) => ["businesses", "detail", slug] as const,
+};
+
 export const useBusiness = () =>{
     return useQuery({
-        queryKey: ['businesses'],
+        queryKey: BUSINESS_QUERY_KEYS.all,
         queryFn: businessServices.fetchBusinessList,
-        staleTime: 1000 * 60 * 5, // 5 minutes
-        gcTime: 1000 * 60 * 30, // 30 minutes
+        staleTime: BUS_STALE_MS,
+        gcTime: BUS_GC_MS,
         refetchOnWindowFocus: false,
         refetchOnMount: false,
         refetchOnReconnect: false,
@@ -18,6 +29,22 @@ export const useBusiness = () =>{
         refetchIntervalInBackground: false,
     })
 }
+
+export const useBusinessPaginated = (page: number, search?: string) => {
+    const searchKey = search?.trim() ?? "";
+    return useQuery<TBusinessPaginatedResponse>({
+        queryKey: BUSINESS_QUERY_KEYS.paginated(page, searchKey),
+        queryFn: () =>
+            businessServices.fetchBusinessListPaginated({
+                page,
+                search: searchKey || undefined,
+            }),
+        staleTime: BUS_STALE_MS,
+        gcTime: BUS_GC_MS,
+        refetchOnWindowFocus: false,
+        placeholderData: (prev) => prev,
+    });
+};
 
 export const useCreateBusiness = () =>{
     const queryClient = useQueryClient();

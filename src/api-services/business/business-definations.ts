@@ -2,6 +2,10 @@ import type { TCategoryRes } from "@/api-services/category/category-definations"
 
 export interface BusinessApiDefinitions{
     fetchBusinessList:() => Promise<TBusinessResponse[]>
+    fetchBusinessListPaginated: (params: {
+        page: number;
+        search?: string;
+    }) => Promise<TBusinessPaginatedResponse>
     createBusiness:(req:TBusinessWritePayload) => Promise <TBusinessResponse>
     updateBusiness:(req:TBusinessWritePayload,slug:string) => Promise <TBusinessResponse>
     deleteBusiness:(slug:string) => Promise<void>
@@ -14,6 +18,9 @@ export type TBusinessListResponse = {
     previous: string | null;
     results: TBusinessResponse[];
   };
+
+/** Same shape as DRF `PageNumberPagination` JSON for the business list endpoint. */
+export type TBusinessPaginatedResponse = TBusinessListResponse;
 
 export type TBusinessResponse = {
     id: number;

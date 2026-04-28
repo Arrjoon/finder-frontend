@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import BusinessFormSidebar from "@/components/business/BusinessFormSidebar";
@@ -8,6 +8,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ListPagination } from "@/components/ui/list-pagination";
+import { drfTotalPages } from "@/lib/pagination";
+import { useClampPageToTotalPages } from "@/hooks/usePagination";
 import {
   Building2,
   Plus,
@@ -27,7 +30,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  useBusiness,
+  useBusinessPaginated,
   useCreateBusiness,
   useUpdateBusiness,
   useDeleteBusiness,
@@ -39,8 +42,39 @@ import {
 } from "@/api-services/business/business-definations";
 import { useCategories } from "@/hooks/category/useCategory";
 
+/** Must match `BusinessPagination.page_size` in `django-finder-backend/businesses/views.py`. */
+const BUSINESS_LIST_PAGE_SIZE = 3;
+
 export default function BusinessesPage() {
-  const { data: businesses = [], isLoading, isError, error, refetch } = useBusiness();
+  const [page, setPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(searchQuery.trim()), 350);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch]);
+
+  const {
+    data,
+    isLoading,
+    isError,
+    error,
+    refetch,
+    isFetching,
+  } = useBusinessPaginated(page, debouncedSearch);
+  const businesses = data?.results ?? [];
+  const totalCount = data?.count ?? 0;
+  const hasPrev = Boolean(data?.previous);
+  const hasNext = Boolean(data?.next);
+  const totalPages = drfTotalPages(totalCount, BUSINESS_LIST_PAGE_SIZE);
+
+  useClampPageToTotalPages(totalPages, setPage);
+
   const { data: categoryList = [] } = useCategories();
   const createBusiness = useCreateBusiness();
   const updateBusiness = useUpdateBusiness();
@@ -53,9 +87,12 @@ export default function BusinessesPage() {
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingBusiness, setEditingBusiness] = useState<TBusinessResponse | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+
+  useEffect(() => {
+    setPage(1);
+  }, [statusFilter, categoryFilter]);
 
   const handleCreate = () => {
     setEditingBusiness(null);
@@ -63,7 +100,6 @@ export default function BusinessesPage() {
   };
 
   const handleEdit = (business: TBusinessResponse) => {
-    console.log(business);
     setEditingBusiness(business);
     setIsFormOpen(true);
   };
@@ -118,26 +154,22 @@ export default function BusinessesPage() {
     }
   };
 
+  /** Search is server-side (`?search=`). Status/category narrow the current page only until the API supports those query params. */
   const filteredBusinesses = businesses.filter((business) => {
-    const matchesSearch =
-      business.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      business.primary_category_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      business.city?.toLowerCase().includes(searchQuery.toLowerCase());
-
     const matchesStatus = statusFilter === "all" || business.status === statusFilter;
-
     const matchesCategory =
       categoryFilter === "all" || business.primary_category_name === categoryFilter;
-
-    return matchesSearch && matchesStatus && matchesCategory;
+    return matchesStatus && matchesCategory;
   });
 
   const categoryFilterOptions = useMemo(() => {
-    const names = businesses
-      .map((b) => b.primary_category_name)
-      .filter((n): n is string => Boolean(n));
-    return Array.from(new Set(names)).sort((a, b) => a.localeCompare(b));
-  }, [businesses]);
+    return [...categoryList]
+      .map((c) => c.name)
+      .filter(Boolean)
+      .sort((a, b) => a.localeCompare(b));
+  }, [categoryList]);
+
+  const pageFilterActive = statusFilter !== "all" || categoryFilter !== "all";
 
   if (isLoading) {
     return (
@@ -187,8 +219,16 @@ export default function BusinessesPage() {
             <div>
               <h2 className="text-2xl font-bold text-gray-900">All Businesses</h2>
               <p className="text-sm text-gray-600 mt-1">
-                {filteredBusinesses.length} business{filteredBusinesses.length !== 1 ? "es" : ""}{" "}
-                found
+                {isLoading
+                  ? "Loading…"
+                  : `${totalCount} business${totalCount !== 1 ? "es" : ""}${
+                      debouncedSearch ? " matching search" : ""
+                    }`}
+                {pageFilterActive && !isLoading ? (
+                  <span className="block text-xs text-gray-500 mt-0.5">
+                    {filteredBusinesses.length} on this page after status/category filters
+                  </span>
+                ) : null}
               </p>
             </div>
             <Button
@@ -208,11 +248,11 @@ export default function BusinessesPage() {
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <Input
                     type="text"
-                    placeholder="Search businesses..."
+                    placeholder="Search name, description, city, address…"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-10"
-                    disabled={mutating}
+                    disabled={mutating || isLoading}
                   />
                 </div>
 
@@ -328,17 +368,35 @@ export default function BusinessesPage() {
             ))}
           </div>
 
-          {filteredBusinesses.length === 0 && (
+          {!isLoading && !isError && totalCount > 0 && (
+            <ListPagination
+              page={page}
+              totalPages={totalPages}
+              totalCount={totalCount}
+              hasPrevious={hasPrev}
+              hasNext={hasNext}
+              onPageChange={setPage}
+              disabled={mutating}
+              isFetching={isFetching && !isLoading}
+            />
+          )}
+
+          {!isLoading && !isError && filteredBusinesses.length === 0 && (
             <Card>
               <CardContent className="py-12 text-center">
                 <Building2 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">No businesses found</h3>
                 <p className="text-gray-600 mb-4">
-                  {searchQuery || statusFilter !== "all" || categoryFilter !== "all"
-                    ? "Try adjusting your filters"
-                    : "Get started by creating your first business"}
+                  {businesses.length > 0 && pageFilterActive
+                    ? "Nothing on this page matches status/category filters — try another page or clear filters."
+                    : totalCount === 0 && !debouncedSearch
+                      ? "Get started by creating your first business"
+                      : "Try adjusting your search or filters"}
                 </p>
-                {!searchQuery && statusFilter === "all" && categoryFilter === "all" && (
+                {!debouncedSearch &&
+                  statusFilter === "all" &&
+                  categoryFilter === "all" &&
+                  totalCount === 0 && (
                   <Button
                     onClick={handleCreate}
                     disabled={mutating}
