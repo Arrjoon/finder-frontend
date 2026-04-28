@@ -9,6 +9,9 @@ import CategoryFormSidebar, {
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ListPagination } from "@/components/ui/list-pagination";
+import { drfTotalPages } from "@/lib/pagination";
+import { useClampPageToTotalPages } from "@/hooks/usePagination";
 import {
   Layers,
   Plus,
@@ -19,8 +22,6 @@ import {
   Calendar,
   Loader2,
   RefreshCw,
-  ChevronLeft,
-  ChevronRight,
 } from "lucide-react";
 import {
   useCategoriesPaginated,
@@ -32,6 +33,9 @@ import { TCategoryRes } from "@/api-services/category/category-definations";
 import { toast } from "sonner";
 
 const DEFAULT_CATEGORY_ICON = "layers";
+
+/** Must match `CategoryPagination.page_size` in `django-finder-backend/categories/views.py`. */
+const CATEGORY_LIST_PAGE_SIZE = 2;
 
 function toFormCategory(c: TCategoryRes): CategoryData {
   return {
@@ -68,6 +72,9 @@ export default function CategoriesPage() {
   const totalCount = data?.count ?? 0;
   const hasPrev = Boolean(data?.previous);
   const hasNext = Boolean(data?.next);
+  const totalPages = drfTotalPages(totalCount, CATEGORY_LIST_PAGE_SIZE);
+
+  useClampPageToTotalPages(totalPages, setPage);
 
   const createCategory = useCreateCategory();
   const updateCategory = useUpdateCategory();
@@ -333,37 +340,18 @@ export default function CategoriesPage() {
           )}
 
           {!isLoading && !isError && categories.length > 0 && (
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-2">
-              <p className="text-sm text-gray-600">
-                Page {page}
-                {isFetching && !isLoading ? (
-                  <Loader2 className="inline h-4 w-4 ml-2 animate-spin text-gray-400" />
-                ) : null}
-              </p>
-              <div className="flex items-center gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={!hasPrev || mutating}
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                >
-                  <ChevronLeft className="h-4 w-4 mr-1" />
-                  Previous
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={!hasNext || mutating}
-                  onClick={() => setPage((p) => p + 1)}
-                >
-                  Next
-                  <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
-              </div>
-            </div>
+            <ListPagination
+              page={page}
+              totalPages={totalPages}
+              totalCount={totalCount}
+              hasPrevious={hasPrev}
+              hasNext={hasNext}
+              onPageChange={setPage}
+              disabled={mutating}
+              isFetching={isFetching && !isLoading}
+            />
           )}
+
 
           {!isLoading && !isError && categories.length === 0 && (
             <Card>
