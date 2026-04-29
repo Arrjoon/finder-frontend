@@ -76,9 +76,10 @@ const HeroSection = ({ children }: HeroSectionProps) => {
   };
 
   return (
-    <section className="relative w-full h-[600px] sm:h-[700px] overflow-hidden">
-      {/* Slider Container */}
-      <div className="relative w-full h-full">
+    <section className="relative w-full min-h-[600px] sm:min-h-[700px]">
+      {/* Slider: overflow hidden only here so slides don't bleed; section can grow so search isn't clipped */}
+      <div className="absolute inset-0 z-0 overflow-hidden min-h-[600px] sm:min-h-[700px]">
+      <div className="relative w-full h-full min-h-[600px] sm:min-h-[700px]">
         {slides.map((slide, index) => (
           <div
             key={slide.id}
@@ -94,6 +95,7 @@ const HeroSection = ({ children }: HeroSectionProps) => {
             </div>
           </div>
         ))}
+      </div>
       </div>
 
       {/* Navigation Arrows */}
@@ -141,11 +143,11 @@ const HeroSection = ({ children }: HeroSectionProps) => {
         </button>
       </div>
 
-      {/* Center Content */}
-      <div className="relative z-30 h-full flex flex-col items-center justify-center px-4">
+      {/* Center Content — pt/pb so tall headings + search fit inside min-height without clipping */}
+      <div className="relative z-30 flex flex-col items-center justify-center px-4 pt-24 pb-16 sm:pt-28 sm:pb-20 min-h-[600px] sm:min-h-[700px]">
         <div className="w-full max-w-5xl mx-auto">
           {/* Title - Above Search */}
-          <div className="text-center mb-8 sm:mb-10">
+          <div className="text-center mb-6 sm:mb-8">
             <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-4 sm:mb-5 drop-shadow-2xl leading-tight">
               {slides[currentSlide].title}
             </h1>
@@ -156,7 +158,6 @@ const HeroSection = ({ children }: HeroSectionProps) => {
           
           {/* Search Bar Component - Centered */}
           <div className="w-full relative z-50">
-            <h1>Search bar index here</h1>
             {children}
           </div>
         </div>
