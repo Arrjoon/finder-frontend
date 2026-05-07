@@ -1,5 +1,6 @@
 // AUTH ROUTES
 export const LOGIN = "accounts/login/";
+export const REGISTER = "accounts/register/";
 
 export const VERIFY_TOKEN = "accounts/token/verify/";
 export const REFRESH_TOKEN = "accounts/token/refresh/";
@@ -7,6 +8,10 @@ export const LOGOUT = "accounts/logout/";
 export const RESET_PASSWORD = "accounts/reset-password/";
 export const FORGET_PASSWORD = "accounts/forgot-password/";
 export const CHANGE_PASSWORD = "accounts/change-password/";
+
+// Admin — users (requires `role === admin`)
+export const ADMIN_USERS_LIST = "accounts/admin/users/";
+export const ADMIN_USER_DETAIL = (id: number) => `accounts/admin/users/${id}/`;
 
 
 export const FETCH_CSRF_TOKEN = "accounts/get-csrftoken/";
@@ -16,9 +21,14 @@ export const FRONTEND_URL =
 export const BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000/api/";
 
-// USER
-export const USER_PROFILE = "/accounts/me";
-export const USER_PROFILE_UPDATE = "/accounts/me/";
+// USER (trailing slash matches Django APPEND_SLASH)
+export const USER_ME = "accounts/me/";
+export const USER_ME_REVIEWS = "accounts/me/reviews/";
+export const USER_ME_ACTIVITIES = "accounts/me/activities/";
+export const USER_ME_SAVED_PLACES = "accounts/me/saved-places/";
+/** @deprecated Use USER_ME */
+export const USER_PROFILE = USER_ME;
+export const USER_PROFILE_UPDATE = USER_ME;
 
 // Category 
 export const FETCH_CATEGORIES_LIST = "categories/";

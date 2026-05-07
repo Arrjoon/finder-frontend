@@ -1,11 +1,19 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { X, User, Mail, Phone, Shield, Calendar, MapPin, Save } from "lucide-react";
+import {
+  X,
+  User,
+  Mail,
+  Phone,
+  Shield,
+  MapPin,
+  Save,
+  Lock,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -13,31 +21,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  rowToFormValues,
+  type TAdminUserRow,
+  type UserFormValues,
+} from "@/api-services/user/user-admin-definations";
 
-interface UserData {
-  id?: number;
-  name: string;
-  email: string;
-  phone: string;
-  role: "admin" | "business" | "user";
-  status: "active" | "inactive" | "suspended";
-  address?: string;
-  city?: string;
-  joinedDate?: string;
-  lastActive?: string;
-  reviewCount?: number;
-  photoUrl?: string;
-}
-
-interface UserFormSidebarProps {
-  isOpen: boolean;
-  onClose: () => void;
-  user?: UserData | null;
-  onSave: (user: Omit<UserData, "id">) => void;
-}
-
-const UserFormSidebar = ({ isOpen, onClose, user, onSave }: UserFormSidebarProps) => {
-  const [formData, setFormData] = useState<Omit<UserData, "id">>({
+function emptyForm(): UserFormValues {
+  return {
     name: "",
     email: "",
     phone: "",
@@ -45,49 +36,39 @@ const UserFormSidebar = ({ isOpen, onClose, user, onSave }: UserFormSidebarProps
     status: "active",
     address: "",
     city: "Kathmandu",
-    joinedDate: new Date().toISOString().split("T")[0],
-    lastActive: new Date().toISOString().split("T")[0],
-    reviewCount: 0,
-    photoUrl: "",
-  });
+    password: "",
+    passwordConfirm: "",
+  };
+}
 
-  const [errors, setErrors] = useState<{ [key: string]: string }>({});
+interface UserFormSidebarProps {
+  isOpen: boolean;
+  onClose: () => void;
+  user: TAdminUserRow | null;
+  onSave: (values: UserFormValues) => void | Promise<void>;
+  isSaving?: boolean;
+}
+
+const UserFormSidebar = ({
+  isOpen,
+  onClose,
+  user,
+  onSave,
+  isSaving = false,
+}: UserFormSidebarProps) => {
+  const [formData, setFormData] = useState<UserFormValues>(emptyForm);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (user) {
-      setFormData({
-        name: user.name || "",
-        email: user.email || "",
-        phone: user.phone || "",
-        role: user.role || "user",
-        status: user.status || "active",
-        address: user.address || "",
-        city: user.city || "Kathmandu",
-        joinedDate: user.joinedDate || new Date().toISOString().split("T")[0],
-        lastActive: user.lastActive || new Date().toISOString().split("T")[0],
-        reviewCount: user.reviewCount || 0,
-        photoUrl: user.photoUrl || "",
-      });
+      setFormData(rowToFormValues(user));
     } else {
-      // Reset form for new user
-      setFormData({
-        name: "",
-        email: "",
-        phone: "",
-        role: "user",
-        status: "active",
-        address: "",
-        city: "Kathmandu",
-        joinedDate: new Date().toISOString().split("T")[0],
-        lastActive: new Date().toISOString().split("T")[0],
-        reviewCount: 0,
-        photoUrl: "",
-      });
+      setFormData(emptyForm());
     }
     setErrors({});
   }, [user, isOpen]);
 
-  const handleChange = (field: string, value: string | number) => {
+  const handleChange = (field: keyof UserFormValues, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }));
@@ -95,45 +76,59 @@ const UserFormSidebar = ({ isOpen, onClose, user, onSave }: UserFormSidebarProps
   };
 
   const validate = (): boolean => {
-    const newErrors: { [key: string]: string } = {};
-    
+    const newErrors: Record<string, string> = {};
+    const isCreate = !user;
+
     if (!formData.name.trim()) newErrors.name = "Name is required";
     if (!formData.email.trim()) {
       newErrors.email = "Email is required";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = "Invalid email format";
     }
-    if (!formData.phone.trim()) newErrors.phone = "Phone is required";
+
+    if (isCreate) {
+      if (!formData.password) {
+        newErrors.password = "Password is required";
+      } else if (formData.password.length < 8) {
+        newErrors.password = "Use at least 8 characters";
+      }
+      if (formData.password !== formData.passwordConfirm) {
+        newErrors.passwordConfirm = "Passwords do not match";
+      }
+    } else if (formData.password || formData.passwordConfirm) {
+      if (formData.password.length < 8) {
+        newErrors.password = "Use at least 8 characters";
+      }
+      if (formData.password !== formData.passwordConfirm) {
+        newErrors.passwordConfirm = "Passwords do not match";
+      }
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (validate()) {
-      onSave(formData);
-      onClose();
-    }
+    if (!validate()) return;
+    await onSave(formData);
   };
 
   return (
     <>
-      {/* Overlay */}
-      {isOpen && (
+      {isOpen ? (
         <div
           className="fixed inset-0 bg-black/50 z-40 transition-opacity"
           onClick={onClose}
+          aria-hidden
         />
-      )}
+      ) : null}
 
-      {/* Sidebar */}
       <div
         className={`fixed top-0 right-0 h-full w-full sm:w-[600px] lg:w-[700px] bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out overflow-y-auto ${
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
-        {/* Header */}
         <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-green-600 text-white p-6 shadow-lg z-10">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -142,10 +137,12 @@ const UserFormSidebar = ({ isOpen, onClose, user, onSave }: UserFormSidebarProps
               </div>
               <div>
                 <h2 className="text-xl font-bold">
-                  {user ? "Edit User" : "Create New User"}
+                  {user ? "Edit user" : "Create user"}
                 </h2>
                 <p className="text-sm text-white/90">
-                  {user ? "Update user information" : "Add a new user to the platform"}
+                  {user
+                    ? "Update account details"
+                    : "Add a new account (sign-in username matches email)"}
                 </p>
               </div>
             </div>
@@ -154,53 +151,37 @@ const UserFormSidebar = ({ isOpen, onClose, user, onSave }: UserFormSidebarProps
               size="icon"
               onClick={onClose}
               className="text-white hover:bg-white/20"
+              type="button"
             >
               <X className="h-5 w-5" />
             </Button>
           </div>
         </div>
 
-        {/* Form Content */}
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* Basic Information */}
           <Card>
             <CardContent className="pt-6 space-y-4">
               <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                 <User className="h-5 w-5 text-blue-600" />
-                Basic Information
+                Basic information
               </h3>
 
-              {/* Profile Photo URL */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Profile Photo URL
-                </label>
-                <Input
-                  type="url"
-                  value={formData.photoUrl}
-                  onChange={(e) => handleChange("photoUrl", e.target.value)}
-                  placeholder="https://example.com/photo.jpg"
-                />
-              </div>
-
-              {/* Name */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Full Name <span className="text-red-500">*</span>
+                  Full name <span className="text-red-500">*</span>
                 </label>
                 <Input
                   type="text"
                   value={formData.name}
                   onChange={(e) => handleChange("name", e.target.value)}
-                  placeholder="Enter full name"
+                  placeholder="First and last name"
                   className={errors.name ? "border-red-500" : ""}
                 />
-                {errors.name && (
+                {errors.name ? (
                   <p className="text-sm text-red-500 mt-1">{errors.name}</p>
-                )}
+                ) : null}
               </div>
 
-              {/* Email */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   <Mail className="h-4 w-4" />
@@ -213,68 +194,120 @@ const UserFormSidebar = ({ isOpen, onClose, user, onSave }: UserFormSidebarProps
                   placeholder="user@example.com"
                   className={errors.email ? "border-red-500" : ""}
                 />
-                {errors.email && (
+                {errors.email ? (
                   <p className="text-sm text-red-500 mt-1">{errors.email}</p>
-                )}
+                ) : null}
               </div>
 
-              {/* Phone */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   <Phone className="h-4 w-4" />
-                  Phone <span className="text-red-500">*</span>
+                  Phone
                 </label>
                 <Input
                   type="tel"
                   value={formData.phone}
                   onChange={(e) => handleChange("phone", e.target.value)}
-                  placeholder="+977 98-1234567"
-                  className={errors.phone ? "border-red-500" : ""}
+                  placeholder="+977 98XXXXXXXX"
                 />
-                {errors.phone && (
-                  <p className="text-sm text-red-500 mt-1">{errors.phone}</p>
-                )}
               </div>
             </CardContent>
           </Card>
 
-          {/* Role & Status */}
+          <Card>
+            <CardContent className="pt-6 space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <Lock className="h-5 w-5 text-amber-600" />
+                {user ? "Reset password (optional)" : "Password"}
+              </h3>
+              {!user ? (
+                <p className="text-sm text-gray-600">
+                  The user will sign in with their email and this password.
+                </p>
+              ) : (
+                <p className="text-sm text-gray-600">
+                  Leave blank to keep the current password. Fill both fields to
+                  set a new one.
+                </p>
+              )}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Password {!user ? <span className="text-red-500">*</span> : null}
+                </label>
+                <Input
+                  type="password"
+                  autoComplete="new-password"
+                  value={formData.password}
+                  onChange={(e) => handleChange("password", e.target.value)}
+                  className={errors.password ? "border-red-500" : ""}
+                />
+                {errors.password ? (
+                  <p className="text-sm text-red-500 mt-1">{errors.password}</p>
+                ) : null}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Confirm password {!user ? <span className="text-red-500">*</span> : null}
+                </label>
+                <Input
+                  type="password"
+                  autoComplete="new-password"
+                  value={formData.passwordConfirm}
+                  onChange={(e) =>
+                    handleChange("passwordConfirm", e.target.value)
+                  }
+                  className={errors.passwordConfirm ? "border-red-500" : ""}
+                />
+                {errors.passwordConfirm ? (
+                  <p className="text-sm text-red-500 mt-1">
+                    {errors.passwordConfirm}
+                  </p>
+                ) : null}
+              </div>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardContent className="pt-6 space-y-4">
               <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                 <Shield className="h-5 w-5 text-green-600" />
-                Role & Status
+                Role &amp; status
               </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Role */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Role <span className="text-red-500">*</span>
                   </label>
                   <Select
                     value={formData.role}
-                    onValueChange={(value) => handleChange("role", value as "admin" | "business" | "user")}
+                    onValueChange={(value) =>
+                      handleChange("role", value as UserFormValues["role"])
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="user">User</SelectItem>
-                      <SelectItem value="business">Business Owner</SelectItem>
+                      <SelectItem value="business">Business owner</SelectItem>
                       <SelectItem value="admin">Admin</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
-                {/* Status */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Status <span className="text-red-500">*</span>
                   </label>
                   <Select
                     value={formData.status}
-                    onValueChange={(value) => handleChange("status", value as "active" | "inactive" | "suspended")}
+                    onValueChange={(value) =>
+                      handleChange(
+                        "status",
+                        value as UserFormValues["status"]
+                      )
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -290,15 +323,13 @@ const UserFormSidebar = ({ isOpen, onClose, user, onSave }: UserFormSidebarProps
             </CardContent>
           </Card>
 
-          {/* Location Information */}
           <Card>
             <CardContent className="pt-6 space-y-4">
               <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                 <MapPin className="h-5 w-5 text-blue-600" />
-                Location InformationImage
+                Location
               </h3>
 
-              {/* Address */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Address
@@ -311,7 +342,6 @@ const UserFormSidebar = ({ isOpen, onClose, user, onSave }: UserFormSidebarProps
                 />
               </div>
 
-              {/* City */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   City
@@ -326,72 +356,23 @@ const UserFormSidebar = ({ isOpen, onClose, user, onSave }: UserFormSidebarProps
             </CardContent>
           </Card>
 
-          {/* Additional Information */}
-          <Card>
-            <CardContent className="pt-6 space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <Calendar className="h-5 w-5 text-green-600" />
-                Additional Information
-              </h3>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Joined Date */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Joined Date
-                  </label>
-                  <Input
-                    type="date"
-                    value={formData.joinedDate}
-                    onChange={(e) => handleChange("joinedDate", e.target.value)}
-                  />
-                </div>
-
-                {/* Last Active */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Last Active
-                  </label>
-                  <Input
-                    type="date"
-                    value={formData.lastActive}
-                    onChange={(e) => handleChange("lastActive", e.target.value)}
-                  />
-                </div>
-              </div>
-
-              {/* Review Count */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Review Count
-                </label>
-                <Input
-                  type="number"
-                  value={formData.reviewCount}
-                  onChange={(e) => handleChange("reviewCount", parseInt(e.target.value) || 0)}
-                  placeholder="0"
-                  min="0"
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Form Actions */}
           <div className="sticky bottom-0 bg-white border-t border-gray-200 p-6 -mx-6 -mb-6 flex items-center justify-end gap-3">
             <Button
               type="button"
               variant="outline"
               onClick={onClose}
               className="px-6"
+              disabled={isSaving}
             >
               Cancel
             </Button>
             <Button
               type="submit"
+              disabled={isSaving}
               className="bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white px-6"
             >
               <Save className="h-4 w-4 mr-2" />
-              {user ? "Update User" : "Create User"}
+              {isSaving ? "Saving…" : user ? "Update user" : "Create user"}
             </Button>
           </div>
         </form>
@@ -401,4 +382,3 @@ const UserFormSidebar = ({ isOpen, onClose, user, onSave }: UserFormSidebarProps
 };
 
 export default UserFormSidebar;
-
