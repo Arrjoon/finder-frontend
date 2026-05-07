@@ -12,6 +12,7 @@ import { Eye, EyeClosed, Mail, Phone, User } from "lucide-react";
 import { toast } from "sonner";
 
 import { useRegister } from "@/hooks/auth/useRegister";
+import { useAuthUserStore } from "@/stores";
 import {
   Form,
   FormControl,
@@ -129,8 +130,9 @@ export default function RegisterForm() {
         ...(phoneTrimmed ? { phone: phoneTrimmed } : {}),
       },
       {
-        onSuccess: (res) => {
+        onSuccess: async (res) => {
           toast.success(res.data.message ?? "Account created successfully.");
+          await useAuthUserStore.getState().refreshUser();
           router.push("/");
           router.refresh();
         },

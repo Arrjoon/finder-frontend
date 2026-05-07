@@ -12,6 +12,7 @@ import { Eye, EyeClosed, OctagonAlert } from "lucide-react";
 import { toast } from "sonner";
 
 import { useLogin } from "@/hooks/auth/useLogin";
+import { useAuthUserStore } from "@/stores";
 import {
   Form,
   FormControl,
@@ -69,8 +70,10 @@ export default function LoginForm() {
     }
 
     login({ username: data.username, password: data.password }, {
-      onSuccess: () => {
+      onSuccess: async () => {
+        await useAuthUserStore.getState().refreshUser();
         router.push("/");
+        router.refresh();
       },
     });
   };
